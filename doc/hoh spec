@@ -1,0 +1,80 @@
+hoh files have the following structure:
+
+89		//magic number
+72 79 72	//"HOH"
+xx xx xx xx	//width
+xx xx xx xx	//height
+xx		//bit depth
+xx xx xx	//colour mode, etc. (TBD)
+xx xx xx xx	//size of hoh image data, if not 0.
+xx xx xx xx	//checksum of hoh image data, if not 0.
+...{hoh image data}
+
+or:
+
+FF D8		//SOI
+FF E0		//APP0 marker
+00 10		//APP0 must have 16 byte data exactly
+4A 46 49 46 00	//"JFIF\0"
+01 02		//JFIF version 1.02 no other version allowed (TBD)
+xx xx xx xx xx	//density units, may have various values, see JFIF standard
+00 00		//JFIF thumbnail not allowed
+FF FE		//COM start, which means no JFIF extension APP0 marker allowed
+01 0A		//HOH header length + 2, 30 bytes
+89		//magic number
+72 79 72	//"HOH"
+xx xx xx xx	//width
+xx xx xx xx	//height
+xx		//bit depth
+xx xx xx	//colour mode, etc. (TBD)
+xx xx xx xx	//size of hoh image data, if not 0.
+xx xx xx xx	//checksum of hoh image data, if not 0.
+xx xx xx xx	//offset to start of HOH data
+...{rest of JFIF}
+FF D9		//end of JFIF
+0-3 bytes padding to 4-byte multiple
+...{hoh image data}
+
+
+89
+H
+O
+H
+
+4 byte width-1
+4 byte height-1
+
+
+8 bit: bit depth. bit depth 0 means all values in the image are zero, and no further image data stored
+
+4 bit: RESERVED
+1 bit: conjoined
+1 bit: has alpha
+2 bit: colour mode grey|rgb|yuv444|yuv420
+
+1 bit: RESERVED
+1 bit: JFIF is JPEG
+1 bit: suitable as fallback
+1 bit: suitable as progressive
+1 bit: has file length
+1 bit: has checksum
+1 bit: has tileOffsets
+1 bit: raw pixel array
+
+4 bit: tile_x dimension NULL|32|64|128|256|512|1024|2048|4096|8192|16384...
+4 bit: tile_y dimension NULL|32|64|128|256|512|1024|2048|4096|8192|16384...
+
+{
+	4 byte length
+}
+{
+	4 byte checksum
+}
+{
+	(n-1) tile offsets of 4 bytes
+}
+
+2 bit: notrans|palette|subgreen|fullcolourtrans
+2 bit: globpred|mappred|treepred|maptreepred
+2 bit: singcont|mapcont|treecont|maptreecont
+2 bit: nolz|lzglob|maplz
