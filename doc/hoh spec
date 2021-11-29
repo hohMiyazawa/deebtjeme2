@@ -47,15 +47,16 @@ H
 
 8 bit: bit depth. bit depth 0 means all values in the image are zero, and no further image data stored
 
-4 bit: RESERVED
+3 bit: RESERVED
+1 bit: has multiple frames
 1 bit: conjoined
 1 bit: has alpha
 2 bit: colour mode grey|rgb|yuv444|yuv420
 
-1 bit: RESERVED
 1 bit: JFIF is JPEG
 1 bit: suitable as fallback
 1 bit: suitable as progressive
+1 bit; JFIF contains relevant metadata
 1 bit: has file length
 1 bit: has checksum
 1 bit: has tileOffsets
@@ -71,10 +72,34 @@ H
 	4 byte checksum
 }
 {
-	(n-1) tile offsets of 4 bytes
+	4 byte number of frames
+}
+{
+	(n-1) (tile offsets | frame offsets) of 4 bytes
 }
 
 2 bit: notrans|palette|subgreen|fullcolourtrans
 2 bit: globpred|mappred|treepred|maptreepred
 2 bit: singcont|mapcont|treecont|maptreecont
 2 bit: nolz|lzglob|maplz
+
+
+---
+frame header
+16 bit: frame duration
+
+ 8 bit: disposal time
+
+ 4 bit: RESERVED
+ 1 bit: blend mode
+ 1 bit: disposal mode
+ 1 bit: use inter-frame compression
+ 1 bit: copy frame
+
+ 8 bit: copy frame offset
+
+ 4 byte: length
+
+{
+	(n-1) tile offsets of 4 bytes
+}
