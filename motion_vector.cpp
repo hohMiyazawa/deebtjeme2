@@ -44,9 +44,11 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 			best_error = error;
 			int best_x_offset = 0;
 			int best_y_offset = 0;
+			int best_x_offset_sub_pel = 0;
+			int best_y_offset_sub_pel = 0;
 
-			for(int y_offset = -max_range;y_offset <= max_range;y_offset++){
-				for(int x_offset = -max_range;x_offset <= max_range;x_offset++){
+			for(int y_offset = -max_range;y_offset < max_range;y_offset++){
+				for(int x_offset = -max_range;x_offset < max_range;x_offset++){
 					for(size_t sub_y = 0;sub_y<sub_pixel_steps;sub_y++){
 					for(size_t sub_x = 0;sub_x<sub_pixel_steps;sub_x++){
 					if(x_offset == 0 && y_offset == 0 && sub_x == 0 && sub_y == 0){
@@ -56,6 +58,9 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 					int signed_sub_y = 0;
 					if(sub_x){
 						signed_sub_x = 1;
+						/**/if(sub_y){
+							continue;
+						}
 					}
 					if(sub_y){
 						signed_sub_y = 1;
@@ -71,10 +76,30 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 					error = 0;
 					for(size_t y2=0;y2<block_height;y2++){
 						for(size_t x2=0;x2<block_width;x2++){
-							//size_t i=1;
 							for(size_t i=0;i<4;i++){
-								double diff = first[((block_height*y + y2)*width + x*block_width + x2)*4 + i]
-									- second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset)*4 + i];
+								double diff = first[((block_height*y + y2)*width + x*block_width + x2)*4 + i];
+								if(sub_x == 0){
+									if(sub_y == 0){
+										diff -= second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset)*4 + i];
+									}
+									else{
+										diff -= (
+											(sub_pixel_steps - sub_y) * second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset)*4 + i]
+											+ sub_y * second[((block_height*y + y2 + y_offset + 1)*width + x*block_width + x2 + x_offset)*4 + i]
+										)/sub_pixel_steps;
+									}
+								}
+								else{
+									if(sub_y == 0){
+										diff -= (
+											(sub_pixel_steps - sub_x) * second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset)*4 + i]
+											+ sub_x * second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset + 1)*4 + i]
+										)/sub_pixel_steps;
+									}
+									else{
+										/**/
+									}
+								}
 								error += diff*diff;
 							}
 						}
@@ -83,6 +108,8 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 					if(error < best_error){
 						best_x_offset = x_offset;
 						best_y_offset = y_offset;
+						best_x_offset_sub_pel = sub_x;
+						best_y_offset_sub_pel = sub_y;
 					}
 					}
 					}
@@ -92,8 +119,29 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 			for(size_t y2=0;y2<block_height;y2++){
 				for(size_t x2=0;x2<block_width;x2++){
 					for(size_t i=0;i<4;i++){
-						buffer[((block_height*y + y2)*width + x*block_width + x2)*4 + i]
-							= second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset)*4 + i];
+						size_t coord = ((block_height*y + y2)*width + x*block_width + x2)*4 + i;
+						if(best_x_offset_sub_pel == 0){
+							if(best_y_offset_sub_pel == 0){
+								buffer[coord] = second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset)*4 + i];
+							}
+							else{
+								buffer[coord] = (
+									(sub_pixel_steps - best_y_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset)*4 + i]
+									+ best_y_offset_sub_pel * second[((block_height*y + y2 + best_y_offset + 1)*width + x*block_width + x2 + best_x_offset)*4 + i]
+								)/sub_pixel_steps;
+							}
+						}
+						else{
+							if(best_y_offset_sub_pel == 0){
+								buffer[coord] = (
+									(sub_pixel_steps - best_x_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset)*4 + i]
+									+ best_x_offset_sub_pel * second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset + 1)*4 + i]
+								)/sub_pixel_steps;
+							}
+							else{
+								/**/
+							}
+						}
 					}
 				}
 			}
