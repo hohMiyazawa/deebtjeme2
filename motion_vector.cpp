@@ -58,9 +58,6 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 					int signed_sub_y = 0;
 					if(sub_x){
 						signed_sub_x = 1;
-						/**/if(sub_y){
-							continue;
-						}
 					}
 					if(sub_y){
 						signed_sub_y = 1;
@@ -97,7 +94,12 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 										)/sub_pixel_steps;
 									}
 									else{
-										/**/
+										diff -= (
+											(2*sub_pixel_steps - sub_x - sub_y) * second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset)*4 + i]
+											+ (sub_pixel_steps - sub_y + sub_x) * second[((block_height*y + y2 + y_offset)*width + x*block_width + x2 + x_offset + 1)*4 + i]
+											+ (sub_pixel_steps - sub_x + sub_y) * second[((block_height*y + y2 + y_offset + 1)*width + x*block_width + x2 + x_offset)*4 + i]
+											+ (sub_x + sub_y) * second[((block_height*y + y2 + y_offset + 1)*width + x*block_width + x2 + x_offset + 1)*4 + i]
+										)/(4*sub_pixel_steps);
 									}
 								}
 								error += diff*diff;
@@ -140,7 +142,12 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 								)/sub_pixel_steps;
 							}
 							else{
-								/**/
+								buffer[coord] = (
+									(2*sub_pixel_steps - best_x_offset_sub_pel - best_y_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset)*4 + i]
+									+ (sub_pixel_steps - best_y_offset_sub_pel + best_x_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset)*width + x*block_width + x2 + best_x_offset + 1)*4 + i]
+									+ (sub_pixel_steps - best_x_offset_sub_pel + best_y_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset + 1)*width + x*block_width + x2 + best_x_offset)*4 + i]
+									+ (best_x_offset_sub_pel + best_y_offset_sub_pel) * second[((block_height*y + y2 + best_y_offset + 1)*width + x*block_width + x2 + best_x_offset + 1)*4 + i]
+								)/(4*sub_pixel_steps);
 							}
 						}
 					}
