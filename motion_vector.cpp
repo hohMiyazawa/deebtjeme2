@@ -110,6 +110,7 @@ void motion_vector(uint8_t* first,uint8_t* second,uint8_t* buffer,unsigned width
 						best_y_offset = y_offset;
 						best_x_offset_sub_pel = sub_x;
 						best_y_offset_sub_pel = sub_y;
+						best_error = error;
 					}
 					}
 					}
