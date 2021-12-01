@@ -10,6 +10,12 @@ xx xx xx xx	//size of hoh image data, if not 0.
 xx xx xx xx	//checksum of hoh image data, if not 0.
 ...{hoh image data}
 
+or: (small?)
+
+xx xx xx xx	//width + height (16bit each)
+xx		//bit depth
+xx xx xx	//colour mode, etc. (TBD)
+
 or:
 
 FF D8		//SOI

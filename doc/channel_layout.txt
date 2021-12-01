@@ -1,0 +1,137 @@
+Types:
+
+Alpha channel
+Main channel (Y or G)
+Colour 1 (Cb, R-G or R)
+Colour 2 (Cr, B-G or B)
+
+All main channels can be full, vertically subsampled, horisontally subsampled, or both
+
+Subchannels:
+	entropy table selector
+	predictor selector
+	LZ table selector
+	saliency map
+
+Channel grouping:
+
+separate
+combined indexed (single channel)
+combined sequential (allows context modelling across channels)
+combined subtracted (allows context modelling across channels)
+
+Example configurations:
+
+G, R, B			separate RGB channels
+[G,R,B]			sequential RGB
+[G,R-G,B-G]		Subtract green colour
+Alpha, [G,R-G,B-G]	subtract green with leading alpha channel
+ARGB			palette ARGB
+RGB			palette
+Y, CB, CR		YUV
+
+/* maybe
+Colour model: luma|rgb
+groups: 1-4
+indicators: alpha=0,main=1,colour1=2,colour2=3
+vertical subsamping: 0|1
+horisontal subsampling: 0|1
+number of channels in group: 1-4
+group combination type if > 1: sequential, subtract first channel from the others, indexed
+
+1 bit colour mode
+2 bits group number
+1-4 groups{
+	2 bits number of channels
+	{2 bits combination mode}
+	1-4 channels{
+		2 bits channel meaning
+	}
+}
+*/
+byte 1-4
+	89
+	'H'
+	'O'
+	'H'
+byte 5:
+
+1 has colour: yes|no
+1 has alpha: yes|no
+1 Colour model: luma|rgb
+2 colour subsampling: 00|01|10|11
+1 group alpha: yes|no
+1 grouping mode: separate|mixed
+1 Progressive: yes|no
+
+byte 6:
+4 bits tile geometry
+	2 bit x_tiles [1-4]
+	2 bit y_tiles [1-4]
+4 bits VERSIONING
+	0000: follows this exact specification
+	..23: future major revision version numbers, 3 available
+	0...: compatibility bit: decoder for older version may attempt decoding, some chance of successful or partial decoding despite revision
+	.1..: non-compatibility bit: decoder for older version will not succeed decoding this file
+	both compatibility and non-compatibility bit set: Official way of signalling this is not a valid file
+
+byte 7+8
+16 range: 1-65536
+
+byte 9-12
+32 bit width
+
+byte 13-16
+32 bit height
+
+---
+89
+'H'
+'O'
+'H'
+1 0 1 00 0 1 0
+0 0 0 0 0000
+0
+255
+0
+0
+7
+127
+0
+0
+4
+55
+---
+palette
+entropy
+subgreen
+prediction
+LZ
+1 entropy yes|no{
+	1 palette yes|no{
+		1 prediction
+		1 LZ
+	}{
+		1 subtract green
+		1 prediction
+		1 LZ
+	}
+}{
+	1 palette yes|no
+}
+
+entropy{
+	grid
+	trees
+}
+palette{
+	grid
+}
+prediction{
+	grid
+	trees
+}
+
+
+
+*
