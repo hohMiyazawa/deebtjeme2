@@ -20,7 +20,7 @@ static struct argp_option options[] = {
 	{ 0 } 
 };
 
-struct arguments {
+struct arguments{
 	char* args[1];
 	char* outputPath;
 	bool hasOutput;

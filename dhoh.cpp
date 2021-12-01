@@ -82,6 +82,12 @@ void validateInfile(uint8_t* in_bytes, int in_size){
 
 static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
+void decode_tile(uint8_t* frame_buffer, uint32_t*& fileIndex, header header, tileHeader tileHeader){
+}
+
+void decode_frame(uint8_t* frame_buffer, uint32_t*& fileIndex, header header){
+}
+
 int main(int argc, char *argv[]){
 	struct arguments arguments;
 	arguments.hasOutput = false;

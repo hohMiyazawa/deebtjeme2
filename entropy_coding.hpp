@@ -58,12 +58,24 @@ uint16_t entropyDecoder::read_extraBits(uint8_t val){
 
 void entropyDecoder::init(uint32_t*& fileIndex){
 	this.data = fileIndex;
-	//read extra bits with padding
+	this.bypass_state = *this.data;
+	this.bypass_length = 32;
+	for(size_t i=31;i--;){
+		if((1 << i) & this.bypass_state){
+			this.bypass_state = this.bypass_state ^ (1 << i);
+			this.bypass_length--;
+		}
+		else{
+			break;
+		}
+	}
+	this.bypass_length--;
 	//TODO
-
+	(*this.data)++;
 	//read rans state
 	Rans64State rans;
         Rans64DecInit(&rans, &fileIndex);
+	(*this.data)++;
 }
 
 uint16_t entropyDecoder::decode(symbolTable* table){
@@ -83,7 +95,7 @@ symbolTable decode_symbolTable(){
 }
 /*
 	0: FLAT 1
-	1-x: some prefab tables. Laplace(?)
+	2-x: some prefab tables. Laplace(?)
 	x: tailored
 	
 	[0,1,2,3] power range
