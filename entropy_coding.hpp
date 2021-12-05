@@ -34,6 +34,7 @@ class entropyDecoder{
 		uint16_t decode(symbolTable* table);
 		uint16_t read_extraBits(uint8_t val);
 		void init(uint32_t*& fileIndex);
+		symbolTable decode_symbolTable(uint8_t length);
 	private:
 		Rans64State rans_state;
 		uint32_t bypass_state;
@@ -91,7 +92,20 @@ uint16_t entropyDecoder::decode(symbolTable* table){
 	return decoded_symbol.value;
 }
 
-symbolTable decode_symbolTable(){
+symbolTable entropyDecoder::decode_symbolTable(uint8_t length){
+	uint8_t mode = this.read_extraBits(2);
+	if(mode == 0){//all zeroes
+	}
+	else if(mode == 1){//equal weights
+	}
+	else if(mode == 2){//laplace?
+		uint8_t readymade = this.read_extraBits(2);
+	}
+	else{//custom
+		uint8_t treemode = this.read_extraBits(2);
+		uint8_t mirroring = this.read_extraBits(1);
+		uint8_t powermode = this.read_extraBits(2);
+	}
 }
 /*
 	0: FLAT 1
