@@ -14,5 +14,5 @@ motion_vector: motion_vector.cpp lode_io.hpp
 colour_cache: colour_cache.cpp lode_io.hpp
 	g++ -o $@ $< lodepng.cpp -O2 $(LIBS)
 
-colour_cache_experiment: colour_cache_experiment.cpp lode_io.hpp
+colour_cache_experiment: colour_cache_experiment.cpp lode_io.hpp entropy_estimation.hpp
 	g++ -o $@ $< lodepng.cpp -O2 $(LIBS)

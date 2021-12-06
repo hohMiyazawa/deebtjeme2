@@ -108,6 +108,12 @@ int main(int argc, char *argv[]){
 	printf("hits: %d, %f%% (%d %d (%d))\n",(int)hits,percentage*100,(int)cache_size,(int)block_size,(int)num_block);
 
 	for(size_t loop=0;loop<10;loop++){
+		SymbolStats cache_ind;
+		for(size_t i=0;i<cache_size;i++){
+			cache_ind.freqs[i] = hitlist[i];
+		}
+		double* lookup_cost = entropyLookup(cache_ind, hits, cache_size);
+
 		double signalling_cost = -std::log2(percentage);
 		for(size_t i=0;i<cache_size*num_block;i++){
 			cache[i] = 0;
@@ -126,8 +132,8 @@ int main(int argc, char *argv[]){
 			if(cache[index + bl*cache_size] == argb_pixel){
 				double cost = green_lookup[filtered_bytes[i*3]] + red_lookup[filtered_bytes[i*3+1]] + blue_lookup[filtered_bytes[i*3+2]];
 				//printf("%f\n",cost);
-				if(cost > cache_bits + signalling_cost){
-					saved += cost - cache_bits - signalling_cost;
+				if(cost > /*cache_bits*/lookup_cost[index] + signalling_cost){
+					saved += cost - /*cache_bits*/lookup_cost[index] - signalling_cost;
 					hits++;
 					hitlist[index]++;
 				}
@@ -139,6 +145,8 @@ int main(int argc, char *argv[]){
 		percentage = (double)hits/(width*height);
 
 		printf("hits: %d, %f%% (%f) (%d %d (%d)) %f\n",(int)hits,percentage*100,signalling_cost,(int)cache_size,(int)block_size,(int)num_block,saved/8);
+
+		delete[] lookup_cost;
 	}
 	for(size_t i=0;i<cache_size;i++){
 		printf("%d,",(int)hitlist[i]);

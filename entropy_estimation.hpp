@@ -33,6 +33,19 @@ double estimateEntropy_freq(SymbolStats frequencies, size_t size){
 	return sum;
 }
 
+double* entropyLookup(SymbolStats stats,size_t total,size_t range){
+	double* table = new double[range];
+	for(size_t i=0;i<range;i++){
+		if(stats.freqs[i] == 0){
+			table[i] = -std::log2(1/(double)total);
+		}
+		else{
+			table[i] = -std::log2(stats.freqs[i]/(double)total);
+		}
+	}
+	return table;
+}
+
 double* entropyLookup(SymbolStats stats,size_t total){
 	double* table = new double[256];
 	for(size_t i=0;i<256;i++){
