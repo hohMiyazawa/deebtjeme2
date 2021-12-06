@@ -109,3 +109,17 @@ frame header
 {
 	(n-1) tile offsets of 4 bytes
 }
+
+---
+
+predictors
+
+2 bit |  D (0,3)
+1 bit | LL (-1,0)
+3 bit |  L (0,7)
+3 bit |  T (-1,6)
+3 bit | TL (-4,3)
+2 bit | TR (0,3)
+2 bit | clampmode none|{T,L}|{T,L,TL,TR}|pick(T,L)
+
+some special ones, encoded as redundant codes: median, full median and paeth

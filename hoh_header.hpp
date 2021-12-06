@@ -28,6 +28,11 @@ struct header{
 	uint32_t checksum;
 };
 
+struct tileHeader{
+	uint32_t width;
+	uint32_t height;
+};
+
 
 header parseHeader(uint32_t*& fileIndex){
 	header header;

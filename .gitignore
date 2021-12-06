@@ -2,3 +2,9 @@
 motion_vector
 choh
 dhoh
+*.hoh
+colour_cache
+colour_cache_experiment
+inter_clamp_grad1
+inter_clamp_grad2
+inter_clamp_gradbottom
