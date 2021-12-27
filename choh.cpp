@@ -8,7 +8,10 @@
 #include "panic.hpp"
 #include "hoh_header.hpp"
 #include "lode_io.hpp"
+#include "image_structs.hpp"
+#include "colour_transform.hpp"
 #include "entropy_coding.hpp"
+#include "encode.hpp"
 
 const char *argp_program_version = "choh 0.0.1";
 static char doc[] = "./choh infile.png -o outfile.hoh\n";
@@ -82,6 +85,9 @@ int main(int argc, char *argv[]){
 	printf("width : %d\n",(int)width);
 	printf("height: %d\n",(int)height);
 
+	image_3ch_8bit rgb = lode_to_rgb(decoded,width,height);
+	delete[] decoded;
+
 	HEADER header;
 	if(arguments.speed == 0){
 		int header_size = headerSize(header);
@@ -91,10 +97,12 @@ int main(int argc, char *argv[]){
 		uint32_t* out_end = out_buf + max_elements;
 		uint32_t* outPointer = out_end;
 
+		entropyEncoder* coder = new entropyEncoder(outPointer);
+
+		encode_raw_rgb(rgb, coder);
+
 		delete[] out_buf;
 	}
-
-	delete[] decoded;
 
 	return 0;
 }

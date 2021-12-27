@@ -1,3 +1,6 @@
+#ifndef ENTROPY_CODING_HEADER
+#define ENTROPY_CODING_HEADER
+
 #include "rans64.h"
 
 typedef struct {
@@ -155,7 +158,7 @@ class entropyEncoder{
 		void encode(symbolTable* table,uint16_t val);
 		void write_range(uint16_t range, uint16_t val);
 		void write_extraBits(uint8_t val, uint16_t bits);
-		void init(uint32_t*& fileIndex);
+		entropyEncoder(uint32_t*& out_end);
 		void encode_symbolTable(uint8_t length, symbolTable table);
 	private:
 		Rans64State rans_state;
@@ -163,4 +166,14 @@ class entropyEncoder{
 		uint8_t bypass_length;
 		uint32_t prob_bits;
 };
+
+entropyEncoder::entropyEncoder(uint32_t*& fileIndex){
+	data = fileIndex;
+	Rans64State rans;
+        Rans64DecInit(&rans, &fileIndex);
+	prob_bits = 31;
+	(*data)--;
+}
+
+#endif
 
