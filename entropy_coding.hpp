@@ -32,6 +32,7 @@ class entropyDecoder{
 	public:
 		uint32_t* data;
 		uint16_t decode(symbolTable* table);
+		uint16_t read_range(uint16_t range);
 		uint16_t read_extraBits(uint8_t val);
 		void init(uint32_t*& fileIndex);
 		symbolTable decode_symbolTable(uint8_t length);
@@ -55,6 +56,10 @@ uint16_t entropyDecoder::read_extraBits(uint8_t val){
 		this.bypass_length = 32;
 		return upper + this.read_extraBits(missing);
 	}
+}
+
+uint16_t entropyDecoder::read_range(uint16_t range){
+	uint32_t s = Rans64DecGet(&this.rans_state, this.prob_bits);
 }
 
 void entropyDecoder::init(uint32_t*& fileIndex){

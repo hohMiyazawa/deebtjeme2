@@ -124,27 +124,33 @@ int main(int argc, char *argv[]){
 
 		hits = 0;
 		double saved = 0;
+		double total = 0;
 
 		for(size_t i=0;i<width*height;i++){
 			size_t bl = (i % width)/block_size;
 			uint32_t argb_pixel = (decoded[i*4] << 24) + (decoded[i*4 + 1] << 16) + (decoded[i*4 + 2] << 8) + decoded[i*4 + 3];
 			size_t index = (0x1e35a7bd * argb_pixel) >> (32 - cache_bits);
+			double cost = green_lookup[filtered_bytes[i*3]] + red_lookup[filtered_bytes[i*3+1]] + blue_lookup[filtered_bytes[i*3+2]];
 			if(cache[index + bl*cache_size] == argb_pixel){
-				double cost = green_lookup[filtered_bytes[i*3]] + red_lookup[filtered_bytes[i*3+1]] + blue_lookup[filtered_bytes[i*3+2]];
 				//printf("%f\n",cost);
 				if(cost > /*cache_bits*/lookup_cost[index] + signalling_cost){
 					saved += cost - /*cache_bits*/lookup_cost[index] - signalling_cost;
+					total += lookup_cost[index] + signalling_cost;
 					hits++;
 					hitlist[index]++;
+				}
+				else{
+					total += cost;
 				}
 			}
 			else{
 				cache[index + bl*cache_size] = argb_pixel;
+				total += cost;
 			}
 		}
 		percentage = (double)hits/(width*height);
 
-		printf("hits: %d, %f%% (%f) (%d %d (%d)) %f\n",(int)hits,percentage*100,signalling_cost,(int)cache_size,(int)block_size,(int)num_block,saved/8);
+		printf("hits: %d, %f%% (%f) (%d %d (%d)) %f %f\n",(int)hits,percentage*100,signalling_cost,(int)cache_size,(int)block_size,(int)num_block,saved/8,total/8);
 
 		delete[] lookup_cost;
 	}
