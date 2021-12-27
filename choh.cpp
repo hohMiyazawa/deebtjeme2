@@ -81,7 +81,7 @@ int main(int argc, char *argv[]){
 	printf("width : %d\n",(int)width);
 	printf("height: %d\n",(int)height);
 
-	header header;
+	HEADER header;
 	if(arguments.speed == 0){
 		int header_size = headerSize(header);
 		int pixel_bits = width*height*channelNumber(header) * header.depth;

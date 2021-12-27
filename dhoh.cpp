@@ -82,10 +82,10 @@ void validateInfile(uint8_t* in_bytes, int in_size){
 
 static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 
-void decode_tile(uint8_t* frame_buffer, uint32_t*& fileIndex, header header, tileHeader tileHeader){
+void decode_tile(uint8_t* frame_buffer, uint32_t*& fileIndex, HEADER header, tileHeader tileHeader){
 }
 
-void decode_frame(uint8_t* frame_buffer, uint32_t*& fileIndex, header header){
+void decode_frame(uint8_t* frame_buffer, uint32_t*& fileIndex, HEADER header){
 }
 
 int main(int argc, char *argv[]){
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]){
 
 	uint32_t* fileIndex = (uint32_t*)in_bytes;
 
-	header header = parseHeader(fileIndex);
+	HEADER header = parseHeader(fileIndex);
 /*
 	fileIndex++;
 

@@ -1,7 +1,7 @@
 #ifndef HOH_HEADER
 #define HOH_HEADER
 
-struct header{
+struct HEADER{
 	uint32_t width;
 	uint32_t height;
 	uint8_t depth;
@@ -34,12 +34,12 @@ struct tileHeader{
 };
 
 
-header parseHeader(uint32_t*& fileIndex){
-	header header;
+HEADER parseHeader(uint32_t*& fileIndex){
+	HEADER header;
 	return header;
 }
 
-void writeHeader(header header, uint32_t*& outPointer){
+void writeHeader(HEADER header, uint32_t*& outPointer){
 	if(header.hasTileOffsets && (header.tile_x || header.tile_y)){
 		for(size_t i = header.tiles-1;i--;){
 			*(--outPointer) = *(header.tile_offsets + i);
@@ -72,7 +72,7 @@ void writeHeader(header header, uint32_t*& outPointer){
 	*(--outPointer) = 0x89727972;
 }
 
-int headerSize(header header){
+int headerSize(HEADER header){
 	int sum = 4;
 	if(header.hasLength){
 		sum++;
@@ -86,7 +86,7 @@ int headerSize(header header){
 	return sum;
 }
 
-int channelNumber(header header){
+int channelNumber(HEADER header){
 	int channels = 3;
 	if(header.mode == header.GREY){
 		channels = 1;
