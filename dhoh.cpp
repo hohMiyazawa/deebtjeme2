@@ -8,6 +8,7 @@
 #include "panic.hpp"
 #include "hoh_header.hpp"
 #include "file_io.hpp"
+#include "entropy_coding.hpp"
 
 const char *argp_program_version = "dhoh 0.0.1";
 static char doc[] = "./dhoh infile.hoh -o outfile.png\n";
