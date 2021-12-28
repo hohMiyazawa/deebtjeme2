@@ -6,6 +6,29 @@
 #include "filter_utils.hpp"
 #include "colour_filter_utils.hpp"
 
+image_3ch_8bit filter_all_3ch_left(image_3ch_8bit rgb,uint32_t range){
+	image_3ch_8bit filtered;
+	filtered.header = rgb.header;
+	filtered.pixels = new uint8_t[filtered.header.width*filtered.header.height*3];
+
+	for(size_t i=1;i<rgb.header.width;i++){
+		filtered.pixels[i*3  ] = sub_mod(rgb.pixels[i*3  ],rgb.pixels[(i - 1)*3  ],range);
+		filtered.pixels[i*3+1] = sub_mod(rgb.pixels[i*3+1],rgb.pixels[(i - 1)*3+1],range);
+		filtered.pixels[i*3+2] = sub_mod(rgb.pixels[i*3+2],rgb.pixels[(i - 1)*3+2],range);
+	}
+	for(size_t y=1;y<rgb.header.height;y++){
+		filtered.pixels[y*rgb.header.width*3    ] = sub_mod(rgb.pixels[(y*rgb.header.width)*3  ],rgb.pixels[((y-1)*rgb.header.width)*3  ],range);
+		filtered.pixels[y*rgb.header.width*3 + 1] = sub_mod(rgb.pixels[(y*rgb.header.width)*3+1],rgb.pixels[((y-1)*rgb.header.width)*3+1],range);
+		filtered.pixels[y*rgb.header.width*3 + 2] = sub_mod(rgb.pixels[(y*rgb.header.width)*3+2],rgb.pixels[((y-1)*rgb.header.width)*3+2],range);
+		for(size_t i=1;i<rgb.header.width;i++){
+			filtered.pixels[(i + y*rgb.header.width)*3  ] = sub_mod(rgb.pixels[(i + y*rgb.header.width)*3  ],rgb.pixels[(i - 1 + y*rgb.header.width)*3  ],range);
+			filtered.pixels[(i + y*rgb.header.width)*3+1] = sub_mod(rgb.pixels[(i + y*rgb.header.width)*3+1],rgb.pixels[(i - 1 + y*rgb.header.width)*3+1],range);
+			filtered.pixels[(i + y*rgb.header.width)*3+2] = sub_mod(rgb.pixels[(i + y*rgb.header.width)*3+2],rgb.pixels[(i - 1 + y*rgb.header.width)*3+2],range);
+		}
+	}
+	return filtered;
+}
+
 uint8_t* colour_filter_all_left(uint8_t* in_bytes, uint32_t range, uint32_t width, uint32_t height){
 	uint8_t* filtered = new uint8_t[width * height * 3];
 

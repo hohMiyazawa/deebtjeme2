@@ -2,6 +2,7 @@
 #define ENTROPY_CODING_HEADER
 
 #include "rans64.h"
+#include "symbolstats.hpp"
 
 typedef struct {
 	Rans64DecSymbol decoded;
@@ -12,14 +13,30 @@ typedef struct {
 class symbolTable{
 	public:
 		uint16_t symbols;
+		uint8_t mode;
 		decoded_symbol decode(uint32_t cum_sym);
+		decoded_symbol* full_table;
+		~symbolTable();
 	private:
 		uint16_t index[256];
-		decoded_symbol* full_table;
+};
+
+symbolTable::~symbolTable(){
+	delete[] full_table;
 };
 
 decoded_symbol symbolTable::decode(uint32_t cum_sym){
 	uint16_t start_location = index[cum_sym >> 23];
+	if(mode == 0){
+		Rans64DecSymbol all_zeroes_dsym;
+		Rans64DecSymbolInit(&all_zeroes_dsym, 0, 1 << 31);
+
+		decoded_symbol all_zeroes;
+		all_zeroes.value = 0;
+		all_zeroes.extra_bits = 0;
+		all_zeroes.decoded = all_zeroes_dsym;
+		return all_zeroes;
+	}
 	while(start_location < symbols){
 		if((*(full_table + start_location + 1)).decoded.start < cum_sym){
 			start_location += 1;
@@ -29,6 +46,22 @@ decoded_symbol symbolTable::decode(uint32_t cum_sym){
 		}
 	}
 	return full_table[start_location];
+}
+
+symbolTable create_symbolTable(SymbolStats stats){
+	symbolTable table;
+	table.full_table = new decoded_symbol[256];
+	table.symbols = 256;
+	table.mode = 42;//debug val
+	return table;
+}
+
+symbolTable create_flat_symbolTable(){
+	symbolTable table;
+	table.full_table = new decoded_symbol[256];
+	table.symbols = 256;
+	table.mode = 1;
+	return table;
 }
 
 class entropyDecoder{
@@ -116,10 +149,13 @@ symbolTable entropyDecoder::decode_symbolTable(uint8_t length){
 	uint8_t mode = read_extraBits(2);
 	symbolTable table;
 	if(mode == 0){//all zeroes
+		table.mode = 0;
 	}
 	else if(mode == 1){//equal weights
+		table.mode = 1;
 	}
 	else if(mode == 2){//laplace?
+		table.mode = 2;
 		uint8_t readymade = read_extraBits(2);
 	}
 	else{//custom
