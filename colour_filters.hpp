@@ -2,6 +2,7 @@
 #define COLOUR_FILTERS_HEADER
 
 #include "numerics.hpp"
+#include "image_structs.hpp"
 #include "delta_colour.hpp"
 #include "filter_utils.hpp"
 #include "colour_filter_utils.hpp"

@@ -41,7 +41,8 @@ int main(int argc, char *argv[]){
 		image[i*4+2] = rgb.pixels[i*3];
 		image[i*4+3] = 255;
 	}
-	char filename[sizeof(argv[1]) + 6];
+
+	char filename[sizeof(argv[1]) + 7];
 	strcpy(filename, argv[1]);
 	strcat(filename, "_R.png");
 
