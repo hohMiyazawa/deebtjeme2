@@ -26,12 +26,14 @@ struct symbolTable{
 	symbolTable* orderZero;
 	size_t orderZero_size;
 	size_t size;
+	size_t valSize;
 };
 
 typedef struct{
 	uint32_t* data;
 	Rans64State rans_state;
 	uint32_t prob_bits;
+	uint32_t prob_scale;
 	uint64_t buffer;
 	uint8_t buffer_size;
 }ransInfo;
@@ -67,7 +69,7 @@ uint16_t readValue(
 		uint32_t s = Rans64DecGet(&(rans.rans_state), rans.prob_bits);
 		uint16_t pivot1 = 0;
 		uint16_t pivot2 = table.size;
-		while(pivot1 != pivot2){
+		while(pivot2 - pivot1 > 1){
 			uint16_t pivot3 = (pivot1 + pivot2)/2;
 			if(table.nodes[pivot3].cum > s){
 				pivot2 = pivot3;
@@ -99,15 +101,79 @@ symbolTable readSymbolTable(
 ){
 	uint8_t encodeMode = readBits(3,rans);
 	symbolTable table;
-	table.size = table_size;
-	if(encodeMode == 0){
+	table.valSize = table_size;
+	if(encodeMode == 0){//zero
 		table.mode = 0;
 	}
-	else if(encodeMode == 1){
+	else if(encodeMode == 1){//raw
 		table.mode = 1;
+		table.size = table_size;
 	}
-	else if(encodeMode == 2){
+	else if(encodeMode == 2){//flat
+		table.mode = 2;
+		table.size = table_size;
 		SymbolStats2 stats;
+		stats.init(table.size);
+		for(size_t i=0;i<table.size;i++){
+			stats.freqs[i] = 1;
+		}
+		stats.normalize_freqs(rans.prob_scale);
+		table.nodes = new decoded_symbol[table.size];
+		for(size_t i=0;i<table.size;i++){
+			table.nodes[i].cum = stats.cum_freqs[i];
+			Rans64DecSymbolInit(&(table.nodes[i].decoded), stats.cum_freqs[i], stats.freqs[i]);
+		}
+	}
+	else if(encodeMode == 3){//laplace
+		table.mode = 2;
+		table.size = table_size;
+		//TODO
+	}
+	else if(encodeMode == 4){//fully weighted
+		table.mode = 2;
+		uint8_t mode2 = readBits(2,rans);
+		bool mirrored = mode2 > 1;
+		bool codeCodes = mode2 % 2;
+		SymbolStats2 stats;
+		stats.init(table.size);
+		if(codeCodes){
+			//TODO
+		}
+		else{
+			if(mirrored){
+				//TODO
+			}
+			else{
+/*
+0	0    0
+1	1    1
+2	2    10
+3	4    100
+4	8    1x00
+5	16   1x000
+6	32   1xx000
+7	64   1xx0000
+*/
+				for(size_t i=0;i<table.size;i++){
+					stats.freqs[i] = 0;
+					size_t expoCode = readBits(3,rans);
+					if(expoCode){
+						stats.freqs[i] = 1 << (expoCode - 1);
+						if(expoCode > 3){
+							size_t extraBits = (expoCode - 2)/2;
+							size_t shift_dist = (expoCode + 1)/2;
+							stats.freqs[i] += readBits(extraBits,rans) << shift_dist;
+						}
+					}
+				}
+			}
+		}
+		stats.normalize_freqs(rans.prob_scale);
+		table.nodes = new decoded_symbol[table.size];
+		for(size_t i=0;i<table.size;i++){
+			table.nodes[i].cum = stats.cum_freqs[i];
+			Rans64DecSymbolInit(&(table.nodes[i].decoded), stats.cum_freqs[i], stats.freqs[i]);
+		}
 	}
 	return table;
 }

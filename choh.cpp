@@ -97,9 +97,10 @@ int main(int argc, char *argv[]){
 		uint32_t* out_end = out_buf + max_elements;
 		uint32_t* outPointer = out_end;
 
-		entropyEncoder* coder = new entropyEncoder(outPointer);
+		ransInfo rans;
+		//fill in details
 
-		encode_raw_rgb(rgb, coder);
+		encode_raw_rgb(rgb, rans);
 
 		delete[] out_buf;
 	}
