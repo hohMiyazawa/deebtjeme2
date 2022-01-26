@@ -1,4 +1,5 @@
 All zeroes 1
+Raw 1
 Flat 1
 Laplace
 	some number of flatness
@@ -11,9 +12,9 @@ Exponential 16
 	big/small weights
 	static/secondary weight coding
 	last 1/2/3
-WebP exponential 16
+(WebP exponential 16
 	big/small weights
-	last 1/2/3
+	last 1/2/3)
 Custom 64
 	mirrored along the middle
 	least significant entropy coding

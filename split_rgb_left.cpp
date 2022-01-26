@@ -43,17 +43,35 @@ int main(int argc, char *argv[]){
 		image[i*4+2] = rgb.pixels[i*3];
 		image[i*4+3] = 255;
 	}
-	char filename[sizeof(argv[1]) + 6];
+	char filename[sizeof(argv[1]) + 7];
 	strcpy(filename, argv[1]);
 	strcat(filename, "_R.png");
 
 	encodeOneStep(filename, image, width, height);
 
+	size_t sim_count = 0;
+	size_t zero_count = 0;
+	size_t one_count = 0;
+	size_t max_count = 0;
+
 	for(size_t i=0;i<width*height;i++){
 		image[i*4]   = rgb.pixels[i*3+1];
 		image[i*4+1] = rgb.pixels[i*3+1];
 		image[i*4+2] = rgb.pixels[i*3+1];
+		if(rgb.pixels[i*3+1] == 0){
+			zero_count++;
+		}
+		if(rgb.pixels[i*3+1] == 1){
+			one_count++;
+		}
+		if(rgb.pixels[i*3+1] == 255){
+			max_count++;
+		}
+		if(i && rgb.pixels[i*3+1] != 0 && rgb.pixels[i*3+1] != 1 && rgb.pixels[i*3+1] != 255 && rgb.pixels[i*3+1] == rgb.pixels[(i-1)*3+1]){
+			sim_count++;
+		}
 	}
+	printf("sim:%d zero:%d one:%d max:%d\n",(int)sim_count,(int)zero_count,(int)one_count,(int)max_count);
 	strcpy(filename, argv[1]);
 	strcat(filename, "_G.png");
 	encodeOneStep(filename, image, width, height);
