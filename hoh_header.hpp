@@ -19,7 +19,6 @@ struct HEADER{
 	bool hasLength;
 	bool hasChecksum;
 	bool hasTileOffsets;
-	bool isRaw;
 	uint32_t tile_x;
 	uint32_t tile_y;
 	uint32_t tiles;
@@ -56,7 +55,6 @@ void writeHeader(HEADER header, uint32_t*& outPointer){
 		(header.depth << 24)
 		+ (((int)header.mode + ((int)header.hasAlpha << 3) + ((int)header.joined << 4)) << 16);
 		+ ((
-			(int)header.isRaw
 			+ ((int)header.hasTileOffsets << 1)
 			+ ((int)header.hasChecksum << 2)
 			+ ((int)header.hasLength << 3)

@@ -5,7 +5,7 @@ all: dhoh choh motion_vector colour_cache colour_cache_experiment split_rgb spli
 dhoh: dhoh.cpp hoh_header.hpp panic.hpp lode_io.hpp lodepng.cpp entropy_coding.hpp
 	g++ -o $@ $< lodepng.cpp -O2 $(LIBS)
 
-choh: choh.cpp hoh_header.hpp panic.hpp file_io.hpp lode_io.hpp lodepng.cpp entropy_coding.hpp encode.hpp numerics.hpp
+choh: choh.cpp hoh_header.hpp panic.hpp file_io.hpp lode_io.hpp lodepng.cpp entropy_coding.hpp encode.hpp numerics.hpp colour_transform.hpp
 	g++ -o $@ $< lodepng.cpp -O2 $(LIBS)
 
 motion_vector: motion_vector.cpp lode_io.hpp lodepng.cpp

@@ -33,6 +33,8 @@ image_3ch_8bit rgb_to_grb_new(image_3ch_8bit rgb){
 
 image_3ch_8bit lode_to_rgb(uint8_t* decoded ,unsigned width, unsigned height){
 	image_3ch_8bit rgb;
+	HEADER header;
+	rgb.header = header;
 	rgb.header.width = width;
 	rgb.header.height = height;
 	rgb.pixels = new uint8_t[rgb.header.width*rgb.header.height*3];

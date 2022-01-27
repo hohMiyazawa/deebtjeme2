@@ -40,7 +40,7 @@ typedef struct{
 
 uint16_t readBits(
 	uint8_t bits,
-	ransInfo rans
+	ransInfo& rans
 ){
 	if(bits == 0){
 		return 0;
@@ -197,7 +197,7 @@ symbolTable readSymbolTable(
 void writeBits(
 	uint8_t bits,
 	uint16_t value,
-	ransInfo rans
+	ransInfo& rans
 ){
 	if(bits == 0){
 		return;
@@ -213,7 +213,7 @@ void writeBits(
 
 Rans64EncSymbol* createEncodeTable_strat1(
 	SymbolStats2 stats,
-	ransInfo rans
+	ransInfo& rans
 ){
 	//simple first strategy, encode as fully weighted, simple 4-bit weights
 	for(size_t i=0;i<stats.total;i++){
