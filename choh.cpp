@@ -7,6 +7,7 @@
 
 #include "panic.hpp"
 #include "hoh_header.hpp"
+#include "file_io.hpp"
 #include "lode_io.hpp"
 #include "image_structs.hpp"
 #include "colour_transform.hpp"
@@ -75,7 +76,8 @@ int main(int argc, char *argv[]){
 	argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
 	if(!arguments.hasOutput){
-		printf("No output file specified. Compression will be performed, but no output file written\n");
+		printf("No output file specified.\n");
+		return 10;
 	}
 
 	unsigned width = 0, height = 0;
@@ -88,7 +90,24 @@ int main(int argc, char *argv[]){
 	image_3ch_8bit rgb = lode_to_rgb(decoded,width,height);
 	delete[] decoded;
 
+	ransInfo rans;
+	rans.prob_bits = 24;
+	rans.prob_scale = (1 << rans.prob_bits);
+	rans.buffer = 0;
+	rans.buffer_size = 0;
+
 	HEADER header;
+	header.width = width;
+	header.height = height;
+	header.depth = 8;
+	header.joined = false;
+	header.hasAlpha = false;
+	enum{
+		GREY,
+		RGB,
+		YUV444,
+		YUV420
+	} mode;
 	if(arguments.speed == 0){
 		int header_size = headerSize(header);
 		int pixel_bits = width*height*channelNumber(header) * header.depth;
@@ -96,11 +115,14 @@ int main(int argc, char *argv[]){
 		uint32_t* out_buf = new uint32_t[max_elements];
 		uint32_t* out_end = out_buf + max_elements;
 		uint32_t* outPointer = out_end;
+		rans.data = outPointer;
 
-		ransInfo rans;
-		//fill in details
-
+		printf("starting encoding\n");
 		encode_raw_rgb(rgb, rans);
+		printf("writing header\n");
+		writeHeader(header, rans.data);
+		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+		write_file(argv[1], (uint8_t*)rans.data, (out_end - rans.data)*4);
 
 		delete[] out_buf;
 	}

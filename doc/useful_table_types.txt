@@ -6,18 +6,13 @@ Laplace
 Fully weighted 32
 	mirrored along the middle
 	big/small weights
-	static/secondary weight coding
-	last 1/2/3
 Exponential 16
 	big/small weights
-	static/secondary weight coding
-	last 1/2/3
+	least significant entropy coding
 (WebP exponential 16
 	big/small weights
-	last 1/2/3)
+	least significant entropy coding
 Custom 64
 	mirrored along the middle
-	least significant entropy coding
 	big/small weights
-	static/secondary weight coding
-	last 1/2/3
+	least significant entropy coding

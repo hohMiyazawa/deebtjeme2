@@ -131,9 +131,8 @@ symbolTable readSymbolTable(
 	}
 	else if(encodeMode == 4){//fully weighted
 		table.mode = 2;
-		uint8_t mode2 = readBits(2,rans);
-		bool mirrored = mode2 > 1;
-		bool codeCodes = mode2 % 2;
+		bool mirrored = readBits(1,rans);
+		bool codeCodes = readBits(1,rans);
 		SymbolStats2 stats;
 		stats.init(table.size);
 		if(codeCodes){
@@ -153,10 +152,12 @@ symbolTable readSymbolTable(
 5	16   1x000
 6	32   1xx000
 7	64   1xx0000
+...
+15
 */
 				for(size_t i=0;i<table.size;i++){
 					stats.freqs[i] = 0;
-					size_t expoCode = readBits(3,rans);
+					size_t expoCode = readBits(4,rans);
 					if(expoCode){
 						stats.freqs[i] = 1 << (expoCode - 1);
 						if(expoCode > 3){
@@ -175,8 +176,64 @@ symbolTable readSymbolTable(
 			Rans64DecSymbolInit(&(table.nodes[i].decoded), stats.cum_freqs[i], stats.freqs[i]);
 		}
 	}
+	else if(encodeMode == 5){//exponential
+		bool codeCodes = readBits(1,rans);
+		bool orderZero = readBits(1,rans);
+	}
+	else if(encodeMode == 6){//webp exponential
+		bool codeCodes = readBits(1,rans);
+		bool orderZero = readBits(1,rans);
+	}
+	else if(encodeMode == 7){//custom
+		//bool mirrored  = readBits(1,rans); //maybe
+		bool codeCodes = readBits(1,rans);
+		bool orderZero = readBits(1,rans);
+	}
 	return table;
 }
 
+//ENCODE
+
+void writeBits(
+	uint8_t bits,
+	uint16_t value,
+	ransInfo rans
+){
+	if(bits == 0){
+		return;
+	}
+	rans.buffer = rans.buffer << bits + value;
+	rans.buffer_size += bits;
+	if(rans.buffer_size > 31){
+		rans.buffer_size = rans.buffer_size - 32;
+		*(--rans.data) = rans.buffer >> rans.buffer_size;
+		rans.buffer = rans.buffer % (1 << rans.buffer_size);
+	} 
+}
+
+Rans64EncSymbol* createEncodeTable_strat1(
+	SymbolStats2 stats,
+	ransInfo rans
+){
+	//simple first strategy, encode as fully weighted, simple 4-bit weights
+	for(size_t i=0;i<stats.total;i++){
+		//idk, see if this can be rounded better than just truncating
+		size_t magnitude = log2_plus(stats.freqs[i]);
+		size_t shift_dist = (magnitude + 1)/2;
+		stats.freqs[i] = (stats.freqs[i] >> shift_dist) << shift_dist;
+	}
+	stats.normalize_freqs(rans.prob_scale);
+	Rans64EncSymbol* esyms = new Rans64EncSymbol[stats.total];
+	for(size_t i=0;i<stats.total;i++){
+		Rans64EncSymbolInit(&esyms[i], stats.cum_freqs[i], stats.freqs[i], rans.prob_bits);
+	}
+	return esyms;
+}
+
+void writeEncodeTable_strat1(
+	SymbolStats2 stats,
+	ransInfo rans
+){
+}
 #endif
 
