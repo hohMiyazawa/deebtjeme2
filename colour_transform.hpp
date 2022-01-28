@@ -65,7 +65,7 @@ image_3ch_8bit lode_to_gRgBg(uint8_t* decoded ,unsigned width, unsigned height){
 	return rgb;
 }
 
-void rgb_to_gRgBg(image_3ch_8bit rgb){
+void rgb_to_gRgBg(image_3ch_8bit& rgb){
 	for(size_t i=0;i<rgb.header.width * rgb.header.height;i++){
 		uint8_t R = rgb.pixels[i*3];
 		uint8_t G = rgb.pixels[i*3 + 1];
