@@ -12,6 +12,22 @@ typedef struct {
 	uint32_t cum;
 } decoded_symbol;
 
+typedef struct {
+	Rans64EncSymbol encoded;
+	uint16_t value;
+	uint8_t extra_bits;
+} encoded_symbol;
+
+typedef struct enode_tree enode_tree;
+
+struct enode_tree{
+	bool leaf;
+	encoded_symbol* enode;
+	enode_tree* left;
+	enode_tree* right;
+	uint16_t thresh;
+};
+
 typedef struct symbolTable symbolTable;
 
 struct symbolTable{
@@ -23,6 +39,8 @@ struct symbolTable{
 // 3: extra_bits
 // 4: extra_bits with order 0
 	decoded_symbol* nodes;
+	encoded_symbol* enodes;
+	enode_tree* etree;
 	symbolTable* orderZero;
 	size_t orderZero_size;
 	size_t size;
@@ -57,7 +75,7 @@ uint16_t readBits(
 
 uint16_t readValue(
 	symbolTable table,
-	ransInfo rans
+	ransInfo& rans
 ){
 	if(table.mode == 0){
 		return 0;
@@ -97,7 +115,7 @@ uint16_t readValue(
 
 symbolTable readSymbolTable(
 	size_t table_size,
-	ransInfo rans
+	ransInfo& rans
 ){
 	uint8_t encodeMode = readBits(3,rans);
 	symbolTable table;
@@ -209,6 +227,54 @@ void writeBits(
 		*(--rans.data) = rans.buffer >> rans.buffer_size;
 		rans.buffer = rans.buffer % (1 << rans.buffer_size);
 	} 
+}
+
+
+void writeValue(
+	uint16_t value,
+	symbolTable table,
+	ransInfo& rans
+){
+	if(table.mode == 0){
+		return;
+	}
+	else if(table.mode == 1){
+		writeBits(log2_plus(table.size - 1) + 1,value,rans);//check if this is right
+	}
+	else{
+		if(table.mode == 2){
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &table.enodes[value].encoded, rans.prob_bits);
+		}
+		else{
+			enode_tree* root = table.etree;
+			while(!((*root).leaf)){
+				if((*root).thresh > value){
+					root = (*root).left;
+				}
+				else{
+					root = (*root).right;
+				}
+			}
+			encoded_symbol enc = *((*root).enode);
+			if(table.mode == 3){
+				writeBits(enc.extra_bits,value - enc.value,rans);
+			}
+			else{
+				if(enc.extra_bits < table.orderZero_size){
+					writeBits(enc.extra_bits,value - enc.value,rans);
+				}
+				else{
+					writeBits(enc.extra_bits - table.orderZero_size,(value - enc.value) >> table.orderZero_size,rans);
+					writeValue(
+						value % (1 << table.orderZero_size),
+						*(table.orderZero),
+						rans
+					);
+				}
+			}
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &enc.encoded, rans.prob_bits);
+		}
+	}
 }
 
 Rans64EncSymbol* createEncodeTable_strat1(
