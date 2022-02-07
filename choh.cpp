@@ -202,6 +202,7 @@ int main(int argc, char *argv[]){
 		printf("filtering (ffv1)\n");
 		image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
 		printf("stats\n");
+
 		SymbolStats2 stats_red;
 		SymbolStats2 stats_green;
 		SymbolStats2 stats_blue;
@@ -225,6 +226,7 @@ int main(int argc, char *argv[]){
 			stats_blue,
 			rans
 		);
+
 		for(size_t i = filtered.header.width*filtered.header.height;i--;){
 			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
 			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
@@ -238,6 +240,7 @@ int main(int argc, char *argv[]){
 		//printf("writing header\n");
 		//writeHeader(header, rans.data);
 		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+
 		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
 		delete[] out_buf;
 	}

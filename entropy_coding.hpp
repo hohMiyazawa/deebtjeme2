@@ -232,7 +232,7 @@ void writeBits(
 
 void writeValue(
 	uint16_t value,
-	symbolTable table,
+	symbolTable& table,
 	ransInfo& rans
 ){
 	if(table.mode == 0){
@@ -278,7 +278,7 @@ void writeValue(
 }
 
 Rans64EncSymbol* createEncodeTable_strat1(
-	SymbolStats2 stats,
+	SymbolStats2& stats,
 	ransInfo& rans
 ){
 	//simple first strategy, encode as fully weighted, simple 4-bit weights
@@ -297,9 +297,33 @@ Rans64EncSymbol* createEncodeTable_strat1(
 }
 
 void writeEncodeTable_strat1(
-	SymbolStats2 stats,
-	ransInfo rans
+	SymbolStats2& stats,
+	ransInfo& rans
 ){
 }
+
+symbolTable createEncodeTable(
+	SymbolStats2& stats,
+	ransInfo& rans
+){
+	//simple first strategy, encode as fully weighted, simple 4-bit weights
+	for(size_t i=0;i<stats.total;i++){
+		//idk, see if this can be rounded better than just truncating
+		size_t magnitude = log2_plus(stats.freqs[i]);
+		size_t shift_dist = (magnitude + 1)/2;
+		stats.freqs[i] = (stats.freqs[i] >> shift_dist) << shift_dist;
+	}
+	stats.normalize_freqs(rans.prob_scale);
+	symbolTable table;
+	table.mode = 2;
+	table.size = stats.total;
+	table.valSize = table.size;
+	table.enodes = new encoded_symbol[table.size];
+	for(size_t i=0;i<table.size;i++){
+		Rans64EncSymbolInit(&table.enodes[i].encoded, stats.cum_freqs[i], stats.freqs[i], rans.prob_bits);
+	}
+	return table;
+}
+	
 #endif
 

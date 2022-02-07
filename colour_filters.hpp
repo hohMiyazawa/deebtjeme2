@@ -36,7 +36,7 @@ image_3ch_8bit filter_all_3ch_ffv1(image_3ch_8bit& rgb,uint32_t range){
 	filtered.header = rgb.header;
 	filtered.pixels = new uint8_t[filtered.header.width*filtered.header.height*3];
 	uint32_t width = rgb.header.width;
-	printf("dim filt %d %d\n",(int)rgb.header.width,(int)rgb.header.height);
+	//printf("dim filt %d %d\n",(int)rgb.header.width,(int)rgb.header.height);
 
 	for(size_t i=1;i<width;i++){
 		filtered.pixels[i*3  ] = sub_mod(rgb.pixels[i*3  ],rgb.pixels[(i - 1)*3  ],range);
@@ -62,7 +62,7 @@ image_3ch_8bit filter_all_3ch_ffv1(image_3ch_8bit& rgb,uint32_t range){
 			filtered.pixels[(i + y*width)*3+2] = sub_mod(rgb.pixels[(i + y*width)*3+2],ffv1(L,T,TL),range);
 		}
 	}
-	printf("Done filtering\n");
+	//printf("Done filtering\n");
 	return filtered;
 }
 

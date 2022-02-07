@@ -1,6 +1,9 @@
 #ifndef NUMERICS_HEADER
 #define NUMERICS_HEADER
 
+//0 -> 0
+//1 -> 1
+//2 -> 2
 uint8_t log2_plus(uint32_t input){
 	if(!input){
 		return 0;

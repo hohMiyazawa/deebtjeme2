@@ -13,4 +13,33 @@ void encode_raw_rgb(image_3ch_8bit rgb, ransInfo& rans){
 	}
 };
 
+/* Outline
+	1. detect pixel format
+		- greyscale detection
+		- opaque alpha stripping
+	2. palette detection
+		- simple strategy: don't bother
+	3. consider colour transforms
+		- simple strategy: always use subtract greeen
+		- more advanced: try several?
+	4. filtering
+		- simple strategy: always use clampedGrad
+	5. stats counting
+		- simple strategy: use one for each channel
+		- more advanced: divide into 8x8 blocks, sort into groups by median cuts on entropy
+	6. try LZ
+	7 optimisation loop
+		- try 8x8 blocks of filters
+		- shuffle entropy groups
+		- run slower matchfinders
+		- select LZ matches
+	8. write data
+		- literals
+		- lz tokens
+	9. write tables
+	10. write subimages
+	11. write header
+	12. write file
+*/
+
 #endif
