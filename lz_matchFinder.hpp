@@ -15,7 +15,13 @@ double code_len_cost(double* exact,size_t value){
 	return log2(value);
 }
 
-void lz_matchFinder(
+typedef struct {
+	uint32_t backref;
+	uint32_t matchlen;
+	uint32_t offset;
+} lz_match;
+
+size_t lz_matchFinder(
 	image_3ch_8bit*& image,
 	size_t hash_bits;
 	double*& literal_costs,
@@ -63,6 +69,7 @@ void lz_matchFinder(
 					matches[match_count].backref = i - location - 1;
 					matches[match_count].matchlen = len - 1;
 					matches[match_count].offset = since_last - 1;
+					match_count++;
 					//TODO: hash in values for the matched stretch
 				}
 			}
@@ -70,4 +77,56 @@ void lz_matchFinder(
 		hashMap[hash] = i;
 	}
 	delete hashMap;
+	return match_count;
 }
+
+/*merging theory
+
+Assumptions:
+- longer backrefs are more expensive
+	(this is not strictly true, but often the case)
+- We always want the longest possible match
+
+Thus, a list can be constructed for each location, sorted by increasing backref and increasing matchlength.
+
+Case 0: isolated match
+
+	....aaaaaa....
+
+	Keep if |lit| - |back| - |len| - |off| + |off_0| - |(off_0 - len - off)|
+
+Case 1: contained match
+
+	....aaaaaaa....
+	......bb.......
+
+	only makes sense to keep one. Calculate net win separately according to case 0, and then keep either or none.
+
+Case 2: overlapping match
+
+	...aaaaaaa.....
+	......bbbbbb...
+
+	Find a split point? Prefix/suffix gain?
+
+	Possible ways to code:
+		...............
+
+		...aaaaaaa.....
+
+		......bbbbbb...
+
+		...aaa.........
+		......bbbbbb...
+
+		...aaaaaaa.....
+		..........bb...
+
+		middle split?
+		moving the middle split:
+			increases a_len by one
+			decreases b_len by one
+
+		in general, the gradient for large values is less than for small values, so lengths should be evened out
+			
+*/
