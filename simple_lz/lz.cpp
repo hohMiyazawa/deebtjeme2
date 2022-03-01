@@ -17,6 +17,10 @@ simulates a very simple codec, stores matches in 4-byte tokens
 */
 
 int main(int argc, char *argv[]){
+	if(argc < 4){
+		printf("lz file hash_bits hash_buckets\n");
+		return 1;
+	}
 	size_t hash_bits = atoi(argv[2]);
 	size_t hash_buckets = atoi(argv[3]);
 
@@ -46,23 +50,31 @@ int main(int argc, char *argv[]){
 			size_t location = hashMap[hash*hash_buckets + bucket];
 			size_t matchlen = 0;
 			if(location != 0xFFFFFFFF){
-				for(size_t len=0;i + len < in_size;len++){
-					if(in_bytes[location + len] != in_bytes[i + len]){
-						break;
-					}
-					matchlen++;
+				if(location >= i){
+					printf("oh no %d\n",(int)location);
 				}
-				if(best_matchlen < matchlen){
-					best_matchlen = matchlen;
-					best_location = location;
+				else{
+					for(size_t len=0;i + len < in_size;len++){
+						if(in_bytes[location + len] != in_bytes[i + len]){
+							break;
+						}
+						//printf("%c %c\n",(char)in_bytes[i + len],(char)in_bytes[location + len]);
+						matchlen++;
+					}
+					//printf("loc %d cur %d len %d\n",(int)location,(int)i,(int)matchlen);
+					if(best_matchlen < matchlen){
+						best_matchlen = matchlen;
+						best_location = location;
+					}
 				}
 			}
 		}
 		for(size_t bucket = 1;bucket<hash_buckets;bucket++){
 			hashMap[hash*hash_buckets + bucket - 1] = hashMap[hash*hash_buckets + bucket];
 		}
-		hashMap[hash*hash_buckets + hash_buckets - 1] = hash;
+		hashMap[hash*hash_buckets + hash_buckets - 1] = i;
 		if(best_matchlen > 4){
+			//printf("mat %d\n",(int)best_matchlen);
 			size+=4;
 			while(best_matchlen--){
 				i++;
@@ -73,7 +85,7 @@ int main(int argc, char *argv[]){
 				for(size_t bucket = 1;bucket<hash_buckets;bucket++){
 					hashMap[hash*hash_buckets + bucket - 1] = hashMap[hash*hash_buckets + bucket];
 				}
-				hashMap[hash*hash_buckets + hash_buckets - 1] = hash;
+				hashMap[hash*hash_buckets + hash_buckets - 1] = i;
 			}
 		}
 		else{
@@ -82,7 +94,7 @@ int main(int argc, char *argv[]){
 	}
 
 
-	printf("size: %d bytes",(int)size);
+	printf("size: %d bytes\n",(int)size);
 	delete[] hashMap;
 	delete[] in_bytes;
 	return 0;
