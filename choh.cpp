@@ -109,7 +109,7 @@ int main(int argc, char *argv[]){
 	header.hasLength = false;
 	header.hasChecksum = false;
 	header.hasTileOffsets = false;
-	header.mode = header.RGB;
+	header.mode = COLOURTYPE::RGB;
 
 	size_t header_size = headerSize(header);
 	size_t pixel_bits = width*height*channelNumber(header) * header.depth;

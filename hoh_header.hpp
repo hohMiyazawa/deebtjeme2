@@ -1,18 +1,20 @@
 #ifndef HOH_HEADER
 #define HOH_HEADER
 
+enum COLOURTYPE{
+	GREY,
+	RGB,
+	YUV444,
+	YUV420
+};
+
 struct HEADER{
 	uint32_t width;
 	uint32_t height;
 	uint8_t depth;
 	bool joined;
 	bool hasAlpha;
-	enum{
-		GREY,
-		RGB,
-		YUV444,
-		YUV420
-	} mode;
+	COLOURTYPE mode;
 	bool hasJFIF;
 	bool hasFallback;
 	bool hasProgressive;
@@ -35,6 +37,17 @@ struct tileHeader{
 
 HEADER parseHeader(uint32_t*& fileIndex){
 	HEADER header;
+	uint32_t magic = *(fileIndex++);
+	if(magic != 0x89727972){
+		panic("not 0x89727972!");
+	}
+	header.width  =  *(fileIndex++) + 1;
+	header.height =  *(fileIndex++) + 1;
+	uint32_t mode_byte = *(fileIndex++);
+	header.depth = mode_byte >> 24;
+	header.mode = static_cast<COLOURTYPE>((mode_byte >> 16) & 0b00000011);
+	header.hasAlpha = (mode_byte >> 16) & 0b00001000;
+	header.joined   = (mode_byte >> 16) & 0b00010000;
 	return header;
 }
 
@@ -86,7 +99,7 @@ int headerSize(HEADER header){
 
 int channelNumber(HEADER header){
 	int channels = 3;
-	if(header.mode == header.GREY){
+	if(header.mode == COLOURTYPE::GREY){
 		channels = 1;
 	}
 	if(header.hasAlpha){

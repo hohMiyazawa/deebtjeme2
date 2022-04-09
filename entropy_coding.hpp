@@ -45,6 +45,8 @@ struct symbolTable{
 	size_t orderZero_size;
 	size_t size;
 	size_t valSize;
+	bool mirrored;
+	bool codeCodes;
 };
 
 typedef struct{
@@ -151,6 +153,8 @@ symbolTable readSymbolTable(
 		table.mode = 2;
 		bool mirrored = readBits(1,rans);
 		bool codeCodes = readBits(1,rans);
+		table.mirrored = mirrored;
+		table.codeCodes = codeCodes;
 		SymbolStats2 stats;
 		stats.init(table.size);
 		if(codeCodes){
@@ -275,6 +279,20 @@ void writeValue(
 			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &enc.encoded, rans.prob_bits);
 		}
 	}
+}
+
+void writeSymbolTable(
+	symbolTable& table,
+	ransInfo& rans
+){
+	if(table.mode < 4){
+		//nothing to do
+	}
+	else if(table.mode == 4){
+		writeBits(1,table.codeCodes,rans);
+		writeBits(1,table.mirrored,rans);
+	}
+	writeBits(3,table.mode,rans);
 }
 
 Rans64EncSymbol* createEncodeTable_strat1(

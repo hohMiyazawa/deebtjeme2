@@ -1,0 +1,16 @@
+wrapper format (jfif?)
+global header
+frame pointers
+
+frames:
+tile pointers
+
+tiles:
+tile headers
+sub_image cross-colour
+sub_image pred
+sub_image ent
+sub_image lz
+sub_image motion
+tables
+image data
