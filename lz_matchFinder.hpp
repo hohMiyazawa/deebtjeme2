@@ -23,15 +23,17 @@ typedef struct {
 
 size_t lz_matchFinder(
 	image_3ch_8bit*& image,
-	size_t hash_bits;
+	size_t hash_bits,
+	size_t hash_buckets,
 	double*& literal_costs,
 	double*& backref_costs,
 	double*& matchlen_costs,
 	double*& offset_costs,
 	lz_match* matches
 ){
-	uint32_t* hashMap = new uint32_t[1 << hash_bits];
-	for(size_t i=0;i<(1 << hash_bits);i++){
+	size_t hash_size = (1 << hash_bits) * hash_buckets;
+	uint32_t* hashMap = new uint32_t[hash_size];
+	for(size_t i=0;i<hash_size;i++){
 		hashMap[i] = 0xFFFFFFFF;
 	}
 	size_t img_size = image.header.width*image.header.height;
@@ -42,8 +44,8 @@ size_t lz_matchFinder(
 			(image.pixels[i*3] << 16) + (image.pixels[i*3 + 1] << 8) + image.pixels[i*3 + 2],
 			32 - hash_bits
 		);
-		if(hashMap[hash] != 0xFFFFFFFF){
-			size_t location = hashMap[hash];
+		if(hashMap[hash * hash_buckets] != 0xFFFFFFFF){
+			size_t location = hashMap[hash * hash_buckets];
 			double saved = 0;
 			size_t len = 0;
 			for(;len + i < img_size;len++){
@@ -70,11 +72,17 @@ size_t lz_matchFinder(
 					matches[match_count].matchlen = len - 1;
 					matches[match_count].offset = since_last - 1;
 					match_count++;
-					//TODO: hash in values for the matched stretch
+					for(size_t j=1;j<len;j++){
+						int inter_hash = mulHash(
+							(image.pixels[(i+j)*3] << 16) + (image.pixels[(i+j)*3 + 1] << 8) + image.pixels[(i+j)*3 + 2],
+							32 - hash_bits
+						);
+						hashMap[inter_hash * hash_buckets] = i+j;
+					}
 				}
 			}
 		}
-		hashMap[hash] = i;
+		hashMap[hash * hash_buckets] = i;
 	}
 	delete hashMap;
 	return match_count;

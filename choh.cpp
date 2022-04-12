@@ -244,5 +244,68 @@ int main(int argc, char *argv[]){
 		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
 		delete[] out_buf;
 	}
+	else if(arguments.speed == 3){
+		size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
+		printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
+		uint32_t* out_buf = new uint32_t[max_elements];
+		uint32_t* out_end = out_buf + max_elements;
+		uint32_t* outPointer = out_end;
+		rans.data = outPointer;
+
+		printf("starting encoding\n");
+		printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+
+		printf("colour transform\n");
+		rgb_to_gRgBg(rgb);
+		printf("filtering (ffv1)\n");
+		image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
+		printf("stats\n");
+		SymbolStats2 stats_red;
+		SymbolStats2 stats_green;
+		SymbolStats2 stats_blue;
+		stats_red.init(256);
+		stats_green.init(256);
+		stats_blue.init(256);
+		for(size_t i = filtered.header.width*filtered.header.height;i--;){
+			stats_red.freqs[filtered.pixels[i*3]]++;
+			stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
+			stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
+		}
+		double* costs = new double[filtered.header.width*filtered.header.height*3];
+
+/*
+		LZ here
+*/
+		delete[] costs;
+		Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
+			stats_red,
+			rans
+		);
+		Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
+			stats_green,
+			rans
+		);
+		Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
+			stats_blue,
+			rans
+		);
+
+		for(size_t i = filtered.header.width*filtered.header.height;i--;){
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[filtered.pixels[i*3    ]], rans.prob_bits);
+		}
+		delete[] esyms_red;
+		delete[] esyms_green;
+		delete[] esyms_blue;
+		//write tables
+
+		//printf("writing header\n");
+		//writeHeader(header, rans.data);
+		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+
+		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+		delete[] out_buf;
+	}
 	return 0;
 }
