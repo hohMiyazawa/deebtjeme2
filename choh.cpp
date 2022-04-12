@@ -291,7 +291,7 @@ int main(int argc, char *argv[]){
 		lz_match* matches;
 		image_3ch_8bit* pointy = &filtered;
 		size_t match_count =  lz_matchFinder(
-			pointy,12,1,costs,&backref_default,&matchlen_default,&offset_default,matches
+			pointy,12,1,costs,backref_default,matchlen_default,offset_default,matches
 		);
 //
 		delete[] costs;

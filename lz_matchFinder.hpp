@@ -24,9 +24,9 @@ size_t lz_matchFinder(
 	size_t hash_bits,
 	size_t hash_buckets,
 	double*& literal_costs,
-	double*& backref_costs,
-	double*& matchlen_costs,
-	double*& offset_costs,
+	double* backref_costs,
+	double* matchlen_costs,
+	double* offset_costs,
 	lz_match*& matches
 ){
 	size_t hash_size = (1 << hash_bits) * hash_buckets;
