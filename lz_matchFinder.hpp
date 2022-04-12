@@ -2,9 +2,7 @@
 
 #include <cmath>
 #include "image_structs.hpp"
-#include "backref_table.hpp"
-#include "matchlen_table.hpp"
-#include "offset_table.hpp"
+#include "hash.hpp"
 
 double code_len_cost(double* exact,size_t value){
 	//use tabled values for value < 256, use log2(value) above
@@ -29,19 +27,19 @@ size_t lz_matchFinder(
 	double*& backref_costs,
 	double*& matchlen_costs,
 	double*& offset_costs,
-	lz_match* matches
+	lz_match*& matches
 ){
 	size_t hash_size = (1 << hash_bits) * hash_buckets;
 	uint32_t* hashMap = new uint32_t[hash_size];
 	for(size_t i=0;i<hash_size;i++){
 		hashMap[i] = 0xFFFFFFFF;
 	}
-	size_t img_size = image.header.width*image.header.height;
+	size_t img_size = image->header.width*image->header.height;
 	size_t since_last = 1;
 	size_t match_count = 0;
 	for(size_t i=0;i<img_size;i++){
 		int hash = mulHash(
-			(image.pixels[i*3] << 16) + (image.pixels[i*3 + 1] << 8) + image.pixels[i*3 + 2],
+			(image->pixels[i*3] << 16) + (image->pixels[i*3 + 1] << 8) + image->pixels[i*3 + 2],
 			32 - hash_bits
 		);
 		if(hashMap[hash * hash_buckets] != 0xFFFFFFFF){
@@ -51,9 +49,9 @@ size_t lz_matchFinder(
 			for(;len + i < img_size;len++){
 				if(
 					!(
-						image.pixels[(i+len)*3] == image.pixels[(location+len)*3]
-						&& image.pixels[(i+len)*3 + 1] == image.pixels[(location+len)*3 + 1]
-						&& image.pixels[(i+len)*3 + 2] == image.pixels[(location+len)*3 + 2]
+						image->pixels[(i+len)*3] == image->pixels[(location+len)*3]
+						&& image->pixels[(i+len)*3 + 1] == image->pixels[(location+len)*3 + 1]
+						&& image->pixels[(i+len)*3 + 2] == image->pixels[(location+len)*3 + 2]
 					)
 				){
 					break;
@@ -74,7 +72,7 @@ size_t lz_matchFinder(
 					match_count++;
 					for(size_t j=1;j<len;j++){
 						int inter_hash = mulHash(
-							(image.pixels[(i+j)*3] << 16) + (image.pixels[(i+j)*3 + 1] << 8) + image.pixels[(i+j)*3 + 2],
+							(image->pixels[(i+j)*3] << 16) + (image->pixels[(i+j)*3 + 1] << 8) + image->pixels[(i+j)*3 + 2],
 							32 - hash_bits
 						);
 						hashMap[inter_hash * hash_buckets] = i+j;

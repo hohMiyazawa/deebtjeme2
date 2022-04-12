@@ -14,6 +14,11 @@
 #include "colour_filters.hpp"
 #include "entropy_coding.hpp"
 #include "encode.hpp"
+#include "lz_matchFinder.hpp"
+
+#include "backref_table.hpp"
+#include "matchlen_table.hpp"
+#include "offset_table.hpp"
 
 const char *argp_program_version = "choh 0.0.1";
 static char doc[] = "./choh infile.png -o outfile.hoh\n";
@@ -271,12 +276,28 @@ int main(int argc, char *argv[]){
 			stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
 			stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
 		}
-		double* costs = new double[filtered.header.width*filtered.header.height*3];
-
+		double* red_cost = stats_red.cost_table();
+		double* green_cost = stats_green.cost_table();
+		double* blue_cost = stats_blue.cost_table();
+		double* costs = new double[filtered.header.width*filtered.header.height];
+		for(size_t i = filtered.header.width*filtered.header.height;i--;){
+			costs[i] = red_cost[filtered.pixels[i*3]]
+				+ green_cost[filtered.pixels[i*3+1]]
+				+ blue_cost[filtered.pixels[i*3+2]];
+		}
 /*
 		LZ here
 */
+		lz_match* matches;
+		image_3ch_8bit* pointy = &filtered;
+		size_t match_count =  lz_matchFinder(
+			pointy,12,1,costs,&backref_default,&matchlen_default,&offset_default,matches
+		);
+//
 		delete[] costs;
+		delete[] red_cost;
+		delete[] green_cost;
+		delete[] blue_cost;
 		Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
 			stats_red,
 			rans
@@ -306,6 +327,9 @@ int main(int argc, char *argv[]){
 
 		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
 		delete[] out_buf;
+	}
+	else{
+		printf("Unsupported speed setting: %d\n",(int)(arguments.speed));
 	}
 	return 0;
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <cmath>
 
 struct SymbolStats
 {
@@ -104,6 +105,7 @@ struct SymbolStats2{
 	void init(size_t size);
 	void normalize_freqs(uint32_t target_total);
 	size_t total;
+	double* cost_table();
 	~SymbolStats2();
 };
 
@@ -126,6 +128,19 @@ void SymbolStats2::calc_cum_freqs(){
 	for(size_t i=0;i<total;i++){
 		cum_freqs[i+1] = cum_freqs[i] + freqs[i];
 	}
+}
+
+double* SymbolStats2::cost_table(){
+	double* table = new double[total];
+	for(size_t i=0;i<total;i++){
+		if(freqs[i] == 0){
+			table[i] = std::log2((double)total);
+		}
+		else{
+			table[i] = -std::log2((double)freqs[i]/(double)total);
+		}
+	}
+	return table;
 }
 
 void SymbolStats2::normalize_freqs(uint32_t target_total){
