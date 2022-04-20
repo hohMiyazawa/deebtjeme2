@@ -291,6 +291,16 @@ void writeSymbolTable(
 	else if(table.mode == 4){
 		writeBits(1,table.codeCodes,rans);
 		writeBits(1,table.mirrored,rans);
+		if(table.mirrored){
+		}
+		else{
+			if(table.codeCodes){
+			}
+			else{
+				for(size_t i=table.size;--i;){
+				}
+			}
+		}
 	}
 	writeBits(3,table.mode,rans);
 }
@@ -341,6 +351,87 @@ symbolTable createEncodeTable(
 		Rans64EncSymbolInit(&table.enodes[i].encoded, stats.cum_freqs[i], stats.freqs[i], rans.prob_bits);
 	}
 	return table;
+}
+
+typedef struct {
+	bool leaf;
+	uint16_t value;
+	uint8_t extra_bits;
+	size_t count;
+	size_t smooth_count;
+	uint32_t cum_freq;
+	double cost;
+	Rans64EncSymbol encoded;
+	treesymbol* left;
+	treesymbol* right;
+	~treesymbol();
+} treesymbol;
+
+treesymbol::~treesymbol(){
+	if(leaf && extra_bits > 0){
+		delete left;
+		delete right;
+	}
+}
+
+treesymbol* tree_builder(
+	SymbolStats2& stats
+){
+	size_t row_width = stats.total;
+	size_t sum = 0;
+	for(size_t i=0;i<row_width;i++){
+		sum += stats.freqs[i];
+	}
+	size_t row_number = 0;
+	size_t offset = 0;
+	size_t last_offset = 0;
+	treesymbol[row_width * 2 - 1] row;
+	for(size_t i=0;i<row_width;i++){
+		row[i] = new treesymbol;
+		row[i].leaf = true;
+		row[i].value = i;
+		row[i].extra_bits = 0;
+		row[i].count = stats.freqs[i];
+		row[i].smooth_count = count_round(stats.freqs[i]);
+		row[i].cum_freq = 0;//set later after scaling
+		row[i].cost = - (sum - row[i].count) * log2((sum - row[i].smooth_count)/sum)
+			- row[i].count * log2(row[i].smooth_count/sum);
+			+ count_cost(row[i].smooth_count);
+	}
+	while(row_width > 1){
+		last_offset = offset;
+		offset += row_width;
+		row_width = (row_width + 1)/2;
+		for(size_t i=0;i<row_width;i++){
+			treesymbol left  = row[last_offset + i*2];
+			treesymbol right = row[last_offset + i*2 + 1];
+			size_t combi_count = left.count + right.count;
+			size_t combi_smooth = count_round(combi_count);
+
+			double iso_cost = left.cost + right.cost + 1;
+			double combi_cost = - (sum - combi_count) * log2((sum - combi_smooth)/sum)
+				- combi_count * log2(combi_smooth/sum);
+				+ count_cost(combi_smooth) + 1;
+			row[offset + i] = new treesymbol;
+			row[offset + i].value = left.value;
+			row[offset + i].extra_bits = left.extra_bits + 1;
+			row[offset + i].count = combi_count;
+			row[offset + i].cum_freq = 0;//set later after scaling
+			if(iso_cost < combi_cost){
+				row[offset + i].leaf = false;
+				row[offset + i].smooth_count = combi_smooth;//dummy value
+				row[offset + i].cost = iso_cost;
+			}
+			else{
+				row[offset + i].leaf = true;
+				row[offset + i].smooth_count = combi_smooth;
+				row[offset + i].cost = combi_cost;
+				delete left;
+				delete right;
+			}
+		}
+	}
+	return (treesymbol[0])&;
 }
 	
 #endif
