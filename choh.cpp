@@ -276,6 +276,11 @@ int main(int argc, char *argv[]){
 			stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
 			stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
 		}
+
+		treesymbol* entropy_test = tree_builder(stats_red);
+
+		printf("ent_test: %f\n",entropy_test->cost);
+
 		double* red_cost = stats_red.cost_table();
 		double* green_cost = stats_green.cost_table();
 		double* blue_cost = stats_blue.cost_table();
@@ -285,9 +290,9 @@ int main(int argc, char *argv[]){
 				+ green_cost[filtered.pixels[i*3+1]]
 				+ blue_cost[filtered.pixels[i*3+2]];
 		}
-/*
-		LZ here
-*/
+
+//		LZ here
+
 		lz_match* matches;
 		image_3ch_8bit* pointy = &filtered;
 		size_t match_count =  lz_matchFinder(
