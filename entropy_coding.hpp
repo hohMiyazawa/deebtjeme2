@@ -432,6 +432,8 @@ treesymbol* tree_builder(
 
 			double sep_cost = (double)left->count * log2((double)left->smooth_count/(double)(left->smooth_count + right->smooth_count))
 				+ (double)right->count * log2((double)right->smooth_count/(double)(left->smooth_count + right->smooth_count)) + (double)combi_count;
+			if(!left->cpount){
+			}
 			row[offset + i] = new treesymbol;
 			row[offset + i]->value = left->value;
 			row[offset + i]->extra_bits = left->extra_bits + 1;
