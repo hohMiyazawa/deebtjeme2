@@ -354,11 +354,47 @@ symbolTable createEncodeTable(
 }
 
 size_t count_round(size_t count){
-	return count;//implement later
+	//return count;//implement later
+	if(count){
+		size_t base = count;
+		size_t zeroes = log2_plus(count) - 1;
+		for(size_t i=0;i<zeroes/2;i++){
+			base = base ^ (1 << i);
+		}
+		return base;
+	}
+	return 0;
+}
+
+size_t count_mag(size_t count){
+	return log2_plus(count);
 }
 
 double count_cost(size_t count){
-	return 4;
+/*
+0 1 2 4
+8 16 32 64
+128 256 512 1024
+2048 4096 8192 16384
+*/
+	if(count){
+		return 5 + (log2_plus(count) - 1)/2;
+	}
+	else{
+		return 5;
+	}
+}
+
+double pair_entropy_saving(size_t a, size_t b){
+	if(a == 0){
+		return (double)(a+b);
+	}
+	else if(b == 0){
+		return (double)(a+b);
+	}
+	return (double)a * log2((double)a/(double)(a+b))
+		+ (double)b * log2((double)b/(double)(a+b))
+		+ (double)(a+b);
 }
 
 typedef struct treesymbol treesymbol;
@@ -379,7 +415,7 @@ struct treesymbol{
 };
 
 treesymbol::~treesymbol(){
-	if(!leaf && extra_bits > 0){
+	if(!leaf){
 		delete left;
 		delete right;
 	}
@@ -391,6 +427,45 @@ size_t enumerate_nodes(treesymbol* root){
 	}
 	else{
 		return enumerate_nodes(root->left) + enumerate_nodes(root->right);
+	}
+}
+
+double tree_cost(treesymbol* root,size_t quant_count){
+	if(root->leaf){
+		if(root->count){
+			return count_cost(root->count)
+				- (double)root->count * log2((double)root->smooth_count/(double)quant_count)
+				+ (double)root->count * (double)root->extra_bits
+				+ (root->extra_bits ? 1 : 0);
+		}
+		else{
+			return count_cost(0)
+				+ (root->extra_bits ? 1 : 0);
+		}
+	}
+	else{
+		return tree_cost(root->left,quant_count)
+			+ tree_cost(root->right,quant_count)
+			+ (root->extra_bits ? 1 : 0);//left + right + decision bit
+	}
+}
+
+void tree_listing(treesymbol* root){
+	if(root->leaf){
+		printf("ll %d,%d %d\n",(int)root->extra_bits,(int)count_mag(root->smooth_count),(int)root->smooth_count);
+	}
+	else{
+		tree_listing(root->left);
+		tree_listing(root->right);
+	}
+}
+
+size_t tree_quant_summer(treesymbol* root){
+	if(root->leaf){
+		return root->smooth_count;
+	}
+	else{
+		return tree_quant_summer(root->left) + tree_quant_summer(root->right);
 	}
 }
 
@@ -424,7 +499,7 @@ treesymbol* tree_builder(
 		offset += row_width;
 		row_width = (row_width + 1)/2;
 		for(size_t i=0;i<row_width;i++){
-			printf("off %d\n",(int)(offset + i));
+			//printf("off %d\n",(int)(offset + i));
 			treesymbol* left  = row[last_offset + i*2];
 			treesymbol* right = row[last_offset + i*2 + 1];
 			size_t combi_count = left->count + right->count;
@@ -432,7 +507,14 @@ treesymbol* tree_builder(
 
 			double sep_cost = (double)left->count * log2((double)left->smooth_count/(double)(left->smooth_count + right->smooth_count))
 				+ (double)right->count * log2((double)right->smooth_count/(double)(left->smooth_count + right->smooth_count)) + (double)combi_count;
-			if(!left->cpount){
+			if(!combi_count){
+				sep_cost = 0;
+			}
+			else if(!left->count){
+				sep_cost = (double)combi_count;
+			}
+			else if(!right->count){
+				sep_cost = (double)combi_count;
 			}
 			row[offset + i] = new treesymbol;
 			row[offset + i]->value = left->value;
@@ -452,14 +534,36 @@ treesymbol* tree_builder(
 				row[offset + i]->smooth_count = combi_smooth;
 				row[offset + i]->cost = 0;
 				row[offset + i]->overhead_cost = count_cost(combi_count) + 1;
-				printf("merge (%d,%d) %f %f\n",(int)left->count,(int)right->count,count_cost(combi_count),-sep_cost + left->overhead_cost + right->overhead_cost + left->cost + right->cost);
+				//printf("pair (%d,%d = %f)\n",(int)left->count,(int)right->count,pair_entropy_saving(left->count,right->count));
+				//printf("merge (%d,%d) %f %f\n",(int)left->count,(int)right->count,count_cost(combi_count),-sep_cost + left->overhead_cost + right->overhead_cost + left->cost + right->cost);
 				delete left;
 				delete right;
 			}
 		}
 	}
 	printf("n_count %d\n",(int)enumerate_nodes(row[stats.total * 2 - 2]));
+	size_t quant_sum = tree_quant_summer(row[stats.total * 2 - 2]);
+	
+	printf("cost %f\n",tree_cost(row[stats.total * 2 - 2],quant_sum));
+	tree_listing(row[stats.total * 2 - 2]);
 	return row[stats.total * 2 - 2];
+}
+
+void writeTree_symbol(
+	size_t val,
+	treesymbol* root,
+	ransInfo& rans
+){
+	while(!root->leaf){
+		if(root->right->value > val){
+			root = root->left;
+		}
+		else{
+			root = root->right;
+		}
+	}
+	writeBits(root->extra_bits,val - root->value,rans);
+	Rans64EncPutSymbol(&rans.rans_state, &rans.data, &root->encoded, rans.prob_bits);
 }
 	
 #endif

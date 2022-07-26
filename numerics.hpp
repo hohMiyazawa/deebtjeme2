@@ -4,6 +4,8 @@
 //0 -> 0
 //1 -> 1
 //2 -> 2
+//3 -> 2
+//4 -> 3
 uint8_t log2_plus(uint32_t input){
 	if(!input){
 		return 0;

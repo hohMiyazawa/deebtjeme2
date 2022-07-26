@@ -66,6 +66,28 @@ image_3ch_8bit filter_all_3ch_ffv1(image_3ch_8bit& rgb,uint32_t range){
 	return filtered;
 }
 
+image_1ch_8bit filter_all_1ch_ffv1(image_1ch_8bit& grey,uint32_t range){
+	image_1ch_8bit filtered;
+	filtered.header = grey.header;
+	filtered.pixels = new uint8_t[filtered.header.width*filtered.header.height];
+	uint32_t width = grey.header.width;
+
+	for(size_t i=1;i<width;i++){
+		filtered.pixels[i] = sub_mod(grey.pixels[i],grey.pixels[i - 1],range);
+	}
+	for(size_t y=1;y<grey.header.height;y++){
+		filtered.pixels[y*width] = sub_mod(grey.pixels[y*width],grey.pixels[(y-1)*width],range);
+		for(size_t i=1;i<grey.header.width;i++){
+			uint8_t L  = grey.pixels[i - 1 + y*width];
+			uint8_t T  = grey.pixels[i + (y-1)*width];
+			uint8_t TL = grey.pixels[i - 1 + (y-1)*width];
+			filtered.pixels[i + y*width] = sub_mod(grey.pixels[i + y*width],ffv1(L,T,TL),range);
+		}
+	}
+	//printf("Done filtering\n");
+	return filtered;
+}
+
 uint8_t* colour_filter_all_left(uint8_t* in_bytes, uint32_t range, uint32_t width, uint32_t height){
 	uint8_t* filtered = new uint8_t[width * height * 3];
 

@@ -117,31 +117,16 @@ int main(int argc, char *argv[]){
 	header.mode = COLOURTYPE::RGB;
 
 	size_t header_size = headerSize(header);
-	size_t pixel_bits = width*height*channelNumber(header) * header.depth;
-	if(arguments.speed == 0){
-		size_t max_elements = (pixel_bits + 31)/32 + header_size + 10;
-		printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
-		uint32_t* out_buf = new uint32_t[max_elements];
-		uint32_t* out_end = out_buf + max_elements;
-		uint32_t* outPointer = out_end;
-		rans.data = outPointer;
 
-		printf("starting encoding\n");
-		printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
-		//replace with encode raw later
-		for(size_t i = rgb.header.width*rgb.header.height;i--;){
-			writeBits(8,rgb.pixels[i*3 + 2],rans);
-			writeBits(8,rgb.pixels[i*3 + 1],rans);
-			writeBits(8,rgb.pixels[i*3    ],rans);
-		}
+	bool isGreyscale = detectGreyscale(rgb);
 
-		//printf("writing header\n");
-		//writeHeader(header, rans.data);
-		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
-		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
-		delete[] out_buf;
-	}
-	else if(arguments.speed == 1){
+	if(isGreyscale){
+		printf("greyscale image\n");
+		header.mode = COLOURTYPE::GREY;
+		size_t pixel_bits = width*height*channelNumber(header) * header.depth;
+
+		image_1ch_8bit grey = rgb_to_grey(rgb);
+
 		size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
 		printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
 		uint32_t* out_buf = new uint32_t[max_elements];
@@ -150,180 +135,46 @@ int main(int argc, char *argv[]){
 		rans.data = outPointer;
 
 		printf("starting encoding\n");
-		printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+		printf("encoding %d pixels\n",(int)grey.header.width*grey.header.height);
 
-		SymbolStats2 stats_red;
-		SymbolStats2 stats_green;
-		SymbolStats2 stats_blue;
-		stats_red.init(256);
-		stats_green.init(256);
-		stats_blue.init(256);
-		for(size_t i = rgb.header.width*rgb.header.height;i--;){
-			stats_red.freqs[rgb.pixels[i*3]]++;
-			stats_green.freqs[rgb.pixels[i*3 +1 ]]++;
-			stats_blue.freqs[rgb.pixels[i*3  +2 ]]++;
-		}
-		Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
-			stats_red,
-			rans
-		);
-		Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
-			stats_green,
-			rans
-		);
-		Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
-			stats_blue,
-			rans
-		);
-		for(size_t i = rgb.header.width*rgb.header.height;i--;){
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ rgb.pixels[i*3  +2]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  rgb.pixels[i*3  +1]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[rgb.pixels[i*3    ]], rans.prob_bits);
-		}
-		delete[] esyms_red;
-		delete[] esyms_green;
-		delete[] esyms_blue;
-		//write tables
-
-		//printf("writing header\n");
-		//writeHeader(header, rans.data);
-		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
-		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
-		delete[] out_buf;
-	}
-	else if(arguments.speed == 2){
-		size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
-		printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
-		uint32_t* out_buf = new uint32_t[max_elements];
-		uint32_t* out_end = out_buf + max_elements;
-		uint32_t* outPointer = out_end;
-		rans.data = outPointer;
-
-		printf("starting encoding\n");
-		printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
-
-		printf("colour transform\n");
-		rgb_to_gRgBg(rgb);
 		printf("filtering (ffv1)\n");
-		image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
+		image_1ch_8bit filtered = filter_all_1ch_ffv1(grey,256);
 		printf("stats\n");
-
-		SymbolStats2 stats_red;
-		SymbolStats2 stats_green;
-		SymbolStats2 stats_blue;
-		stats_red.init(256);
-		stats_green.init(256);
-		stats_blue.init(256);
+		SymbolStats2 stats;
+		stats.init(256);
 		for(size_t i = filtered.header.width*filtered.header.height;i--;){
-			stats_red.freqs[filtered.pixels[i*3]]++;
-			stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
-			stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
-		}
-		Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
-			stats_red,
-			rans
-		);
-		Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
-			stats_green,
-			rans
-		);
-		Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
-			stats_blue,
-			rans
-		);
-
-		for(size_t i = filtered.header.width*filtered.header.height;i--;){
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[filtered.pixels[i*3    ]], rans.prob_bits);
-		}
-		delete[] esyms_red;
-		delete[] esyms_green;
-		delete[] esyms_blue;
-		//write tables
-
-		//printf("writing header\n");
-		//writeHeader(header, rans.data);
-		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
-
-		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
-		delete[] out_buf;
-	}
-	else if(arguments.speed == 3){
-		size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
-		printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
-		uint32_t* out_buf = new uint32_t[max_elements];
-		uint32_t* out_end = out_buf + max_elements;
-		uint32_t* outPointer = out_end;
-		rans.data = outPointer;
-
-		printf("starting encoding\n");
-		printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
-
-		printf("colour transform\n");
-		rgb_to_gRgBg(rgb);
-		printf("filtering (ffv1)\n");
-		image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
-		printf("stats\n");
-		SymbolStats2 stats_red;
-		SymbolStats2 stats_green;
-		SymbolStats2 stats_blue;
-		stats_red.init(256);
-		stats_green.init(256);
-		stats_blue.init(256);
-		for(size_t i = filtered.header.width*filtered.header.height;i--;){
-			stats_red.freqs[filtered.pixels[i*3]]++;
-			stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
-			stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
+			stats.freqs[filtered.pixels[i]]++;
 		}
 
-		treesymbol* entropy_test = tree_builder(stats_red);
+		treesymbol* entropy_test = tree_builder(stats);
 
 		printf("ent_test: %f\n",entropy_test->cost);
 
-		double* red_cost = stats_red.cost_table();
-		double* green_cost = stats_green.cost_table();
-		double* blue_cost = stats_blue.cost_table();
+		double* cost = stats.cost_table();
 		double* costs = new double[filtered.header.width*filtered.header.height];
 		for(size_t i = filtered.header.width*filtered.header.height;i--;){
-			costs[i] = red_cost[filtered.pixels[i*3]]
-				+ green_cost[filtered.pixels[i*3+1]]
-				+ blue_cost[filtered.pixels[i*3+2]];
+			costs[i] = cost[filtered.pixels[i]];
 		}
 
 //		LZ here
 
 		lz_match* matches;
-		image_3ch_8bit* pointy = &filtered;
+		image_1ch_8bit* pointy = &filtered;
 		size_t match_count =  lz_matchFinder(
 			pointy,12,1,costs,backref_default,matchlen_default,offset_default,matches
 		);
 //
 		delete[] costs;
-		delete[] red_cost;
-		delete[] green_cost;
-		delete[] blue_cost;
-		Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
-			stats_red,
-			rans
-		);
-		Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
-			stats_green,
-			rans
-		);
-		Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
-			stats_blue,
+		delete[] cost;
+		Rans64EncSymbol* esyms = createEncodeTable_strat1(
+			stats,
 			rans
 		);
 
 		for(size_t i = filtered.header.width*filtered.header.height;i--;){
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
-			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[filtered.pixels[i*3    ]], rans.prob_bits);
+			Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms[filtered.pixels[i]], rans.prob_bits);
 		}
-		delete[] esyms_red;
-		delete[] esyms_green;
-		delete[] esyms_blue;
+		delete[] esyms;
 		//write tables
 
 		//printf("writing header\n");
@@ -334,7 +185,227 @@ int main(int argc, char *argv[]){
 		delete[] out_buf;
 	}
 	else{
-		printf("Unsupported speed setting: %d\n",(int)(arguments.speed));
+		size_t pixel_bits = width*height*channelNumber(header) * header.depth;
+		if(arguments.speed == 0){
+			size_t max_elements = (pixel_bits + 31)/32 + header_size + 10;
+			printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
+			uint32_t* out_buf = new uint32_t[max_elements];
+			uint32_t* out_end = out_buf + max_elements;
+			uint32_t* outPointer = out_end;
+			rans.data = outPointer;
+
+			printf("starting encoding\n");
+			printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+			//replace with encode raw later
+			for(size_t i = rgb.header.width*rgb.header.height;i--;){
+				writeBits(8,rgb.pixels[i*3 + 2],rans);
+				writeBits(8,rgb.pixels[i*3 + 1],rans);
+				writeBits(8,rgb.pixels[i*3    ],rans);
+			}
+
+			//printf("writing header\n");
+			//writeHeader(header, rans.data);
+			printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+			write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+			delete[] out_buf;
+		}
+		else if(arguments.speed == 1){
+			size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
+			printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
+			uint32_t* out_buf = new uint32_t[max_elements];
+			uint32_t* out_end = out_buf + max_elements;
+			uint32_t* outPointer = out_end;
+			rans.data = outPointer;
+
+			printf("starting encoding\n");
+			printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+
+			SymbolStats2 stats_red;
+			SymbolStats2 stats_green;
+			SymbolStats2 stats_blue;
+			stats_red.init(256);
+			stats_green.init(256);
+			stats_blue.init(256);
+			for(size_t i = rgb.header.width*rgb.header.height;i--;){
+				stats_red.freqs[rgb.pixels[i*3]]++;
+				stats_green.freqs[rgb.pixels[i*3 +1 ]]++;
+				stats_blue.freqs[rgb.pixels[i*3  +2 ]]++;
+			}
+			Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
+				stats_red,
+				rans
+			);
+			Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
+				stats_green,
+				rans
+			);
+			Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
+				stats_blue,
+				rans
+			);
+			for(size_t i = rgb.header.width*rgb.header.height;i--;){
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ rgb.pixels[i*3  +2]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  rgb.pixels[i*3  +1]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[rgb.pixels[i*3    ]], rans.prob_bits);
+			}
+			delete[] esyms_red;
+			delete[] esyms_green;
+			delete[] esyms_blue;
+			//write tables
+
+			//printf("writing header\n");
+			//writeHeader(header, rans.data);
+			printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+			write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+			delete[] out_buf;
+		}
+		else if(arguments.speed == 2){
+			size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
+			printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
+			uint32_t* out_buf = new uint32_t[max_elements];
+			uint32_t* out_end = out_buf + max_elements;
+			uint32_t* outPointer = out_end;
+			rans.data = outPointer;
+
+			printf("starting encoding\n");
+			printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+
+			printf("colour transform\n");
+			rgb_to_gRgBg(rgb);
+			printf("filtering (ffv1)\n");
+			image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
+			printf("stats\n");
+
+			SymbolStats2 stats_red;
+			SymbolStats2 stats_green;
+			SymbolStats2 stats_blue;
+			stats_red.init(256);
+			stats_green.init(256);
+			stats_blue.init(256);
+			for(size_t i = filtered.header.width*filtered.header.height;i--;){
+				stats_red.freqs[filtered.pixels[i*3]]++;
+				stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
+				stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
+			}
+			Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
+				stats_red,
+				rans
+			);
+			Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
+				stats_green,
+				rans
+			);
+			Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
+				stats_blue,
+				rans
+			);
+
+			for(size_t i = filtered.header.width*filtered.header.height;i--;){
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[filtered.pixels[i*3    ]], rans.prob_bits);
+			}
+			delete[] esyms_red;
+			delete[] esyms_green;
+			delete[] esyms_blue;
+			//write tables
+
+			//printf("writing header\n");
+			//writeHeader(header, rans.data);
+			printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+
+			write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+			delete[] out_buf;
+		}
+		else if(arguments.speed == 3){
+			size_t max_elements = 2*((pixel_bits + 31)/32) + header_size + 10;
+			printf("pixel_bits: %d max_elements: %d\n",(int)pixel_bits,(int)max_elements);	
+			uint32_t* out_buf = new uint32_t[max_elements];
+			uint32_t* out_end = out_buf + max_elements;
+			uint32_t* outPointer = out_end;
+			rans.data = outPointer;
+
+			printf("starting encoding\n");
+			printf("encoding %d pixels\n",(int)rgb.header.width*rgb.header.height);
+
+			printf("colour transform\n");
+			rgb_to_gRgBg(rgb);
+			printf("filtering (ffv1)\n");
+			image_3ch_8bit filtered = filter_all_3ch_ffv1(rgb,256);
+			printf("stats\n");
+			SymbolStats2 stats_red;
+			SymbolStats2 stats_green;
+			SymbolStats2 stats_blue;
+			stats_red.init(256);
+			stats_green.init(256);
+			stats_blue.init(256);
+			for(size_t i = filtered.header.width*filtered.header.height;i--;){
+				stats_red.freqs[filtered.pixels[i*3]]++;
+				stats_green.freqs[filtered.pixels[i*3 +1 ]]++;
+				stats_blue.freqs[filtered.pixels[i*3  +2 ]]++;
+			}
+
+			treesymbol* entropy_test1 = tree_builder(stats_red);
+			treesymbol* entropy_test2 = tree_builder(stats_green);
+			treesymbol* entropy_test3 = tree_builder(stats_blue);
+
+			printf("ent_test: %f\n",entropy_test1->cost);
+
+			double* red_cost = stats_red.cost_table();
+			double* green_cost = stats_green.cost_table();
+			double* blue_cost = stats_blue.cost_table();
+			double* costs = new double[filtered.header.width*filtered.header.height];
+			for(size_t i = filtered.header.width*filtered.header.height;i--;){
+				costs[i] = red_cost[filtered.pixels[i*3]]
+					+ green_cost[filtered.pixels[i*3+1]]
+					+ blue_cost[filtered.pixels[i*3+2]];
+			}
+
+	//		LZ here
+
+			lz_match* matches;
+			image_3ch_8bit* pointy = &filtered;
+			size_t match_count =  lz_matchFinder(
+				pointy,12,1,costs,backref_default,matchlen_default,offset_default,matches
+			);
+	//
+			delete[] costs;
+			delete[] red_cost;
+			delete[] green_cost;
+			delete[] blue_cost;
+			Rans64EncSymbol* esyms_red = createEncodeTable_strat1(
+				stats_red,
+				rans
+			);
+			Rans64EncSymbol* esyms_green = createEncodeTable_strat1(
+				stats_green,
+				rans
+			);
+			Rans64EncSymbol* esyms_blue = createEncodeTable_strat1(
+				stats_blue,
+				rans
+			);
+
+			for(size_t i = filtered.header.width*filtered.header.height;i--;){
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_blue[ filtered.pixels[i*3  +2]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_red[  filtered.pixels[i*3  +1]], rans.prob_bits);
+				Rans64EncPutSymbol(&rans.rans_state, &rans.data, &esyms_green[filtered.pixels[i*3    ]], rans.prob_bits);
+			}
+			delete[] esyms_red;
+			delete[] esyms_green;
+			delete[] esyms_blue;
+			//write tables
+
+			//printf("writing header\n");
+			//writeHeader(header, rans.data);
+			printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
+
+			write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+			delete[] out_buf;
+		}
+		else{
+			printf("Unsupported speed setting: %d\n",(int)(arguments.speed));
+		}
 	}
 	return 0;
 }
