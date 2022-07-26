@@ -19,6 +19,7 @@
 #include "backref_table.hpp"
 #include "matchlen_table.hpp"
 #include "offset_table.hpp"
+#include "prefix_coding.hpp"
 
 const char *argp_program_version = "choh 0.0.1";
 static char doc[] = "./choh infile.png -o outfile.hoh\n";
@@ -139,6 +140,7 @@ int main(int argc, char *argv[]){
 
 		printf("filtering (ffv1)\n");
 		image_1ch_8bit filtered = filter_all_1ch_ffv1(grey,256);
+
 		printf("stats\n");
 		SymbolStats2 stats;
 		stats.init(256);
@@ -160,13 +162,73 @@ int main(int argc, char *argv[]){
 
 		printf("cost sum %f\n",costSum);
 
+		image_1ch_8bit filtered2 = filter_all_1ch_general(
+			grey,
+			256,
+			4,
+			4,
+			-1,
+			2,
+			0,
+			-2,
+			3,
+			-1,
+			2
+		);
+
 //		LZ here
 
 		lz_match* matches;
 		image_1ch_8bit* pointy = &filtered;
 		size_t match_count =  lz_matchFinder(
-			pointy,12,8,costs,backref_default,matchlen_default,offset_default,matches
+			pointy,12,8,costs,
+			backref_default,
+			matchlen_default,
+			offset_default,
+			matches
 		);
+		for(size_t loop = 0;loop<20;loop++){
+			SymbolStats2 backref_stats;
+			SymbolStats2 matchlen_stats;
+			SymbolStats2 offset_stats;
+			backref_stats.init(256);
+			matchlen_stats.init(256);
+			offset_stats.init(256);
+			for(size_t i=0;i<match_count;i++){
+				uint8_t backref_prefix = inverse_prefix(matches[i].backref);
+				backref_stats.freqs[backref_prefix]++;
+				uint8_t matchlen_prefix = inverse_prefix(matches[i].matchlen);
+				matchlen_stats.freqs[matchlen_prefix]++;
+				uint8_t offset_prefix = inverse_prefix(matches[i].offset);
+				offset_stats.freqs[offset_prefix]++;
+			}
+			double* backref_cost = backref_stats.cost_table();
+			double backref_cost_flat[256];
+			double* matchlen_cost = matchlen_stats.cost_table();
+			double matchlen_cost_flat[256];
+			double* offset_cost = offset_stats.cost_table();
+			double offset_cost_flat[256];
+			for(size_t i=0;i<256;i++){
+				uint8_t prefix = inverse_prefix(i);
+				uint8_t extra = extrabits_from_prefix(prefix);
+				backref_cost_flat[i] = backref_cost[prefix] + extra;
+				matchlen_cost_flat[i] = matchlen_cost[prefix] + extra;
+				offset_cost_flat[i] = offset_cost[prefix] + extra;
+			}
+			delete[] backref_cost;
+			delete[] matchlen_cost;
+			delete[] offset_cost;
+
+			delete[] matches;
+			match_count =  lz_matchFinder(
+				pointy,12,8+loop,costs,
+				backref_cost_flat,
+				matchlen_cost_flat,
+				offset_cost_flat,
+				matches
+			);
+		}
+		
 
 		delete[] costs;
 		delete[] cost;
@@ -186,6 +248,9 @@ int main(int argc, char *argv[]){
 		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
 
 		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
+
+		delete[] filtered;
+		delete[] filtered2;
 		//delete[] out_buf;
 	}
 	else{

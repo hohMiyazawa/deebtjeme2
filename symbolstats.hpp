@@ -207,4 +207,5 @@ void SymbolStats2::normalize_freqs(uint32_t target_total){
         freqs[i] = cum_freqs[i+1] - cum_freqs[i];
     }
 }
+
 #endif //SYMBOLSTATS_HEADER

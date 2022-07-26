@@ -3,6 +3,7 @@
 #include <cmath>
 #include "image_structs.hpp"
 #include "hash.hpp"
+#include "prefix_coding.hpp"
 
 double code_len_cost(double* exact,size_t value){
 	//use tabled values for value < 256, use log2(value) above

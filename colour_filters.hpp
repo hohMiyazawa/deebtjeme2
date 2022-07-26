@@ -775,4 +775,140 @@ uint8_t* colour_filter_all_subColour(uint8_t* in_bytes, uint32_t range, uint32_t
 	return filtered;
 }
 
+image_1ch_8bit filter_all_1ch_general(
+	image_1ch_8bit& grey,
+	uint32_t range,
+	int L_w,
+	int T_w,
+	int TL_w,
+	int TR_w,
+	int LL_w,
+	int TT_w,
+	int TRR_w,
+	int TLL_w,
+	uint8_t clamp_mode
+){
+	image_1ch_8bit filtered;
+	filtered.header = grey.header;
+	filtered.pixels = new uint8_t[filtered.header.width*filtered.header.height];
+	uint32_t width = grey.header.width;
+
+	int sum_w = L_w + T_w + TL_w + TR_w + LL_w + TT_w + TRR_w + TLL_w;
+	if(!sum_w){
+		printf("pred weights sum to 0!\n");
+	}
+
+	uint8_t L;
+	uint8_t T  = grey.pixels[0];
+	uint8_t TL = grey.pixels[0];
+	uint8_t TR = grey.pixels[1];
+	uint8_t LL;
+	uint8_t TT;
+	uint8_t TLL;
+	uint8_t TRR = grey.pixels[2];
+
+	uint8_t lower = 0;
+	uint8_t upper = 255;
+	for(size_t i=1;i<width;i++){
+		filtered.pixels[i] = sub_mod(grey.pixels[i],grey.pixels[i - 1],range);
+	}
+	filtered.pixels[width] = sub_mod(grey.pixels[width],grey.pixels[0],range);
+	L = grey.pixels[width];
+	for(size_t i=1;i<width;i++){
+		LL  = L;
+		TLL = TL;
+		TL  = T;
+		T   = TR;
+		TR  = TRR;
+		TRR = grey.pixels[i + 2];
+		TT  = T;
+		L   = grey.pixels[width + i - 1];
+
+		if(clamp_mode){
+			if(L > T){
+				upper = L;
+				lower = T;
+			}
+			else{
+				upper = T;
+				lower = L;
+			}
+			if(clamp_mode > 1){
+				if(TL > upper){
+					upper = TL;
+				}
+				if(TL < lower){
+					lower = TL;
+				}
+				if(clamp_mode > 2){
+					if(TR > upper){
+						upper = TR;
+					}
+					if(TR < lower){
+						lower = TR;
+					}
+				}
+			}
+		}
+		int pred = clamp(
+			(L*L_w + T*T_w + TL*TL_w + TR*TR_w + LL*LL_w + TT*TT_w + TLL*TLL_w + TRR*TRR_w + (sum_w - 1)/2)/sum_w,
+			lower,
+			upper
+		);
+		filtered.pixels[i + width] = sub_mod(grey.pixels[i + width],pred,range);
+	}
+	for(size_t y=2;y<grey.header.height;y++){
+		filtered.pixels[y*width] = sub_mod(grey.pixels[y*width],grey.pixels[(y-1)*width],range);
+		L   = grey.pixels[y*width];
+		T   = grey.pixels[(y-1)*width];
+		TL  = T;
+		TR  = grey.pixels[(y-1)*width + 1];
+		TRR = grey.pixels[(y-1)*width + 2];
+		for(size_t i=1;i<grey.header.width;i++){
+			LL  = L;
+			TLL = TL;
+			TL  = T;
+			T   = TR;
+			TR  = TRR;
+			TRR = grey.pixels[(y-1)*width + i + 2];
+			TT  = grey.pixels[(y-2)*width + i];
+			L   = grey.pixels[y*width + i - 1];
+			if(clamp_mode){
+				if(L > T){
+					upper = L;
+					lower = T;
+				}
+				else{
+					upper = T;
+					lower = L;
+				}
+				if(clamp_mode > 1){
+					if(TL > upper){
+						upper = TL;
+					}
+					if(TL < lower){
+						lower = TL;
+					}
+					if(clamp_mode > 2){
+						if(TR > upper){
+							upper = TR;
+						}
+						if(TR < lower){
+							lower = TR;
+						}
+					}
+				}
+			}
+			int pred = clamp(
+				(L*L_w + T*T_w + TL*TL_w + TR*TR_w + LL*LL_w + TT*TT_w + TLL*TLL_w + TRR*TRR_w + (sum_w - 1)/2)/sum_w,
+				lower,
+				upper
+			);
+			filtered.pixels[i + y*width] = sub_mod(grey.pixels[i + y*width],pred,range);
+		}
+	}
+	//printf("Done filtering\n");
+	return filtered;
+}
+
 #endif //COLOUR_FILTERS_HEADER

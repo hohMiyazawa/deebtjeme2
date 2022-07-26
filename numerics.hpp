@@ -69,4 +69,5 @@ inline int roundDownDivide(int a, int b){
 	}
 }
 
+
 #endif // NUMERICS_HEADER
