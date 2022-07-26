@@ -545,7 +545,7 @@ treesymbol* tree_builder(
 	size_t quant_sum = tree_quant_summer(row[stats.total * 2 - 2]);
 	
 	printf("cost %f\n",tree_cost(row[stats.total * 2 - 2],quant_sum));
-	tree_listing(row[stats.total * 2 - 2]);
+	//tree_listing(row[stats.total * 2 - 2]);
 	return row[stats.total * 2 - 2];
 }
 

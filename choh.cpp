@@ -152,18 +152,22 @@ int main(int argc, char *argv[]){
 
 		double* cost = stats.cost_table();
 		double* costs = new double[filtered.header.width*filtered.header.height];
+		double costSum = 0;
 		for(size_t i = filtered.header.width*filtered.header.height;i--;){
+			costSum += cost[filtered.pixels[i]];
 			costs[i] = cost[filtered.pixels[i]];
 		}
+
+		printf("cost sum %f\n",costSum);
 
 //		LZ here
 
 		lz_match* matches;
 		image_1ch_8bit* pointy = &filtered;
 		size_t match_count =  lz_matchFinder(
-			pointy,12,1,costs,backref_default,matchlen_default,offset_default,matches
+			pointy,12,8,costs,backref_default,matchlen_default,offset_default,matches
 		);
-//
+
 		delete[] costs;
 		delete[] cost;
 		Rans64EncSymbol* esyms = createEncodeTable_strat1(
@@ -182,7 +186,7 @@ int main(int argc, char *argv[]){
 		printf("writing file (%d bytes)\n",(int)((out_end - rans.data)*4));
 
 		write_file(arguments.outputPath, (uint8_t*)rans.data, (out_end - rans.data)*4);
-		delete[] out_buf;
+		//delete[] out_buf;
 	}
 	else{
 		size_t pixel_bits = width*height*channelNumber(header) * header.depth;

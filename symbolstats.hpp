@@ -105,6 +105,8 @@ struct SymbolStats2{
 	void init(size_t size);
 	void normalize_freqs(uint32_t target_total);
 	size_t total;
+	size_t sum;
+	size_t calc_sum();
 	double* cost_table();
 	~SymbolStats2();
 };
@@ -130,14 +132,24 @@ void SymbolStats2::calc_cum_freqs(){
 	}
 }
 
+size_t SymbolStats2::calc_sum(){
+	sum = 0;
+	for(size_t i=0;i<total;i++){
+		sum += freqs[i];
+	}
+	return sum;
+}
+
+
 double* SymbolStats2::cost_table(){
-	double* table = new double[total];
+	calc_sum();
+	double* table = new double[sum];
 	for(size_t i=0;i<total;i++){
 		if(freqs[i] == 0){
-			table[i] = std::log2((double)total);
+			table[i] = std::log2((double)sum);
 		}
 		else{
-			table[i] = -std::log2((double)freqs[i]/(double)total);
+			table[i] = -std::log2((double)freqs[i]/(double)sum);
 		}
 	}
 	return table;
